@@ -1,0 +1,25 @@
+[package]
+name = "drawer_fm"
+version = "0.1.0"
+edition = "2021"
+authors = ["QT <tranquth@protonmail.com>"]
+# readme = "README.md"
+
+[dependencies]
+argh = "0.1.12"
+crossterm = { version = "0.28.1", optional = true }
+dirs = "5.0.1"
+ratatui = "0.29.0"
+
+[features]
+default = ["crossterm", "underline-color"]
+
+crossterm = ["dep:crossterm"]
+
+## enables the [`border!`] marcro
+macros = []
+
+## enables the backend code that sets the underline color.
+## Underline color is only supported by the [`CrosstermBackend`](backend::CrosstermBackend) backend,
+## and is not supported on Windows 7.
+underline-color = ["dep:crossterm"]
