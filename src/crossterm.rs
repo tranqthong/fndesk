@@ -2,7 +2,7 @@ use std::error::Error;
 use std::io;
 use std::time::{Duration, Instant};
 
-use crossterm::event::{self, Event, KeyCode, KeyEventKind};
+use crossterm::event::{self, Event, KeyEventKind};
 use ratatui::prelude::Backend;
 use ratatui::Terminal;
 
@@ -39,19 +39,7 @@ fn run_app<B: Backend>(
         if event::poll(timeout)? {
             if let Event::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Press {
-                    match key.code {
-                        KeyCode::Char('q') => app.quit_app(),
-                        KeyCode::Char('h') => app.toggle_hidden(),
-                        KeyCode::Enter | KeyCode::Char(' ') => app.open_selected(),
-                        KeyCode::Up => app.move_cursor_up(),
-                        KeyCode::Down => app.move_cursor_down(),
-                        KeyCode::Left => app.move_cursor_left(),
-                        KeyCode::Right => app.move_cursor_right(),
-                        KeyCode::Tab | KeyCode::BackTab => app.switch_panes(),
-                        KeyCode::Esc | KeyCode::Backspace => app.nav_up_dir(),
-                        KeyCode::Delete => app.delete_selected(),
-                        _ => {}
-                    }
+                    app.handle_keypress(key);
                 }
             }
         }

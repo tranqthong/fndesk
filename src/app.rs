@@ -1,5 +1,6 @@
 use std::{fs::DirEntry, process::Command};
 
+use crossterm::event::{KeyCode, KeyEvent, KeyEventKind};
 use ratatui::widgets::ListState;
 
 use crate::utils::{get_dir_items, get_parent_dir};
@@ -48,52 +49,66 @@ impl App {
         }
     }
 
-    pub fn quit_app(&mut self) {
+    pub fn handle_keypress(&mut self, key: KeyEvent) {
+        if key.kind == KeyEventKind::Press {
+            match key.code {
+                KeyCode::Char('q') => self.quit_app(),
+                KeyCode::Char('h') => self.toggle_hidden(),
+                KeyCode::Enter | KeyCode::Char(' ') => self.open_selected(),
+                KeyCode::Up => self.move_cursor_up(),
+                KeyCode::Down => self.move_cursor_down(),
+                KeyCode::Left => self.move_cursor_left(),
+                KeyCode::Right => self.move_cursor_right(),
+                KeyCode::Tab | KeyCode::BackTab => self.switch_panes(),
+                KeyCode::Esc | KeyCode::Backspace => self.nav_up_dir(),
+                KeyCode::Delete => self.delete_selected(),
+                _ => {}
+            }
+        }
+    }
+
+    fn quit_app(&mut self) {
         self.app_state = AppState::Exit;
     }
 
-    pub fn toggle_hidden(&mut self) {
-        if self.show_hidden {
-            self.show_hidden = false;
-        } else {
-            self.show_hidden = true;
-        }
+    fn toggle_hidden(&mut self) {
+        self.show_hidden = !self.show_hidden;
         self.dir_items
             .set_items(get_dir_items(&self.current_dir, &self.show_hidden));
     }
 
-    pub fn move_cursor_left(&mut self) {
+    fn move_cursor_left(&mut self) {
         // TODO navigate through the table
     }
 
-    pub fn move_cursor_right(&mut self) {
+    fn move_cursor_right(&mut self) {
         // TODO navigate through the table
     }
 
-    pub fn move_cursor_up(&mut self) {
+    fn move_cursor_up(&mut self) {
         self.dir_items.state.select_previous();
     }
 
-    pub fn move_cursor_down(&mut self) {
+    fn move_cursor_down(&mut self) {
         self.dir_items.state.select_next();
     }
 
-    pub fn switch_panes(&mut self) {
+    fn switch_panes(&mut self) {
         // TODO switch between left and right
     }
 
-    pub fn delete_selected(&mut self) {
+    fn delete_selected(&mut self) {
         // TODO move file to user's trash
     }
 
-    pub fn nav_up_dir(&mut self) {
+    fn nav_up_dir(&mut self) {
         self.current_dir = self.parent_dir.clone();
         self.parent_dir = get_parent_dir(&self.current_dir);
         self.dir_items
             .set_items(get_dir_items(&self.current_dir, &self.show_hidden));
     }
 
-    pub fn open_selected(&mut self) {
+    fn open_selected(&mut self) {
         let selected_index = self.dir_items.state.selected().unwrap();
         let selected_entry = &self.dir_items.items[selected_index];
         if selected_entry.metadata().unwrap().is_dir() {
