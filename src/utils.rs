@@ -1,36 +1,57 @@
-use std::ffi::OsStr;
+use std::{
+    env,
+    ffi::OsString,
+    fs::{self, DirEntry},
+    path::PathBuf,
+};
 
-use ratatui::style::{palette::tailwind::SLATE, Color};
+pub fn get_parent_dir(selected_dir: &String) -> String {
+    let path = PathBuf::from(selected_dir);
 
-const NORMAL_ROW_BG: Color = SLATE.c950;
-const ALT_ROW_BG_COLOR: Color = SLATE.c900;
-
-pub fn get_file_name(path: &OsStr) -> String {
-    path.to_string_lossy().into_owned()
+    path.parent()
+        .unwrap()
+        .as_os_str()
+        .to_os_string()
+        .into_string()
+        .unwrap()
 }
 
-pub const fn alternate_colors(i: usize) -> Color {
-    if i % 2 == 0 {
-        NORMAL_ROW_BG
-    } else {
-        ALT_ROW_BG_COLOR
+pub fn get_dir_items(selected_dir: &String, show_hidden: &bool) -> Vec<DirEntry> {
+    let mut item_paths: Vec<_> = fs::read_dir(selected_dir)
+        .unwrap()
+        .map(|x| x.unwrap())
+        .collect();
+    if !show_hidden {
+        item_paths.retain(|x| !x.file_name().into_string().unwrap().contains("."));
     }
+    item_paths.sort_by_key(|x| x.path());
+
+    item_paths
+}
+
+pub fn get_init_dirpath() -> OsString {
+    let current_dir = env::current_dir().unwrap();
+    current_dir.as_os_str().to_os_string()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::ffi::OsStr;
 
     #[test]
-    fn test_get_file_name() {
-        let path = OsStr::new("path/to/test_file.txt");
-        assert_eq!(get_file_name(path), "test_file.txt".to_string());
+    fn test_get_init_dirpath() {
+        let result = get_init_dirpath();
+        let expected = env::current_dir()
+            .unwrap()
+            .into_os_string()
+            .into_string()
+            .unwrap();
+        assert_eq!(expected, result.into_string().unwrap());
     }
 
     #[test]
-    fn test_get_file_name_blank() {
-        let path = OsStr::new("");
-        assert_eq!(get_file_name(path), "".to_string());
-    }
+    fn test_get_parent_dir() {}
+
+    #[test]
+    fn test_get_dir_items() {}
 }

@@ -1,66 +1,62 @@
-use std::{error::Error, io};
+use std::error::Error;
+use std::io;
+use std::time::{Duration, Instant};
 
-use ratatui::{
-    backend::Backend,
-    crossterm::event::{self, Event, KeyCode},
-    Terminal,
-};
+use crossterm::event::{self, Event, KeyCode, KeyEventKind};
+use ratatui::prelude::Backend;
+use ratatui::Terminal;
 
-use crate::{app::App, tui::tui};
+use crate::app::{App, AppState};
+use crate::{ui, utils};
 
-pub fn run(enhanced_graphics: bool) -> Result<(), Box<dyn Error>> {
+pub fn run(tick_rate: Duration) -> Result<(), Box<dyn Error>> {
     let mut terminal = ratatui::init();
-    // manual way to set up terminal, will use default, leaving this in for now
-    // enable_raw_mode()?;
-    // let mut stdout = io::stdout();
-    // execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
-    // let backend = CrosstermBackend::new(stdout);
-    // let mut terminal = Terminal::new(backend)?;
-
-    // create app and run it
-    let app = App::new("Drawer FM", enhanced_graphics);
-    let app_result = run_app(&mut terminal, app);
-
-    //manual way of restoring terminal, leaving this in for now
-    // restore terminal
-    // disable_raw_mode()?;
-    // execute!(
-    //     terminal.backend_mut(),
-    //     LeaveAlternateScreen,
-    //     DisableMouseCapture
-    // )?;
-    // terminal.show_cursor()?;
+    let init_dir = utils::get_init_dirpath();
+    // should always be able grab the current directory from which the program is started
+    let app = App::new(init_dir.into_string().unwrap());
+    let app_result = run_app(&mut terminal, app, tick_rate);
 
     ratatui::restore();
 
     if let Err(err) = app_result {
-        println!("{err:?}");
+        println!("{err:?}"); // TODO replace with logging later
     }
-
     Ok(())
 }
 
-fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
-    while !app.exit_program {
-        terminal.draw(|f| tui(f, &mut app))?;
+fn run_app<B: Backend>(
+    terminal: &mut Terminal<B>,
+    mut app: App,
+    tick_rate: Duration,
+) -> io::Result<()> {
+    let mut last_tick = Instant::now();
+    while app.app_state == AppState::Running {
+        terminal.draw(|f| {
+            ui::draw(f, &mut app);
+        })?;
 
-        if let Event::Key(key) = event::read()? {
-            if key.kind != event::KeyEventKind::Press {
-                continue;
+        let timeout = tick_rate.saturating_sub(last_tick.elapsed());
+        if event::poll(timeout)? {
+            if let Event::Key(key) = event::read()? {
+                if key.kind == KeyEventKind::Press {
+                    match key.code {
+                        KeyCode::Char('q') => app.quit_app(),
+                        KeyCode::Char('h') => app.toggle_hidden(),
+                        KeyCode::Enter | KeyCode::Char(' ') => app.open_selected(),
+                        KeyCode::Up => app.move_cursor_up(),
+                        KeyCode::Down => app.move_cursor_down(),
+                        KeyCode::Left => app.move_cursor_left(),
+                        KeyCode::Right => app.move_cursor_right(),
+                        KeyCode::Tab | KeyCode::BackTab => app.switch_panes(),
+                        KeyCode::Esc | KeyCode::Backspace => app.nav_up_dir(),
+                        KeyCode::Delete => app.delete_selected(),
+                        _ => {}
+                    }
+                }
             }
-
-            match key.code {
-                KeyCode::Char('q') => app.on_q(),
-                KeyCode::Enter | KeyCode::Char(' ') => app.open_selection(),
-                KeyCode::Up => app.on_up(),
-                KeyCode::Down => app.on_down(),
-                KeyCode::Left => app.on_left(),
-                KeyCode::Right => app.on_right(),
-                KeyCode::Tab | KeyCode::BackTab => app.on_tab(),
-                KeyCode::Esc | KeyCode::Backspace => app.on_backspace(),
-                KeyCode::Delete => app.on_del(),
-                _ => {}
-            }
+        }
+        if last_tick.elapsed() >= tick_rate {
+            last_tick = Instant::now();
         }
     }
     Ok(())

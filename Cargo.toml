@@ -8,7 +8,7 @@ authors = ["QT <tranquth@protonmail.com>"]
 [dependencies]
 argh = "0.1.12"
 crossterm = { version = "0.28.1", optional = true }
-dirs = "5.0.1"
+env_logger = "0.11.5"
 ratatui = "0.29.0"
 
 [features]

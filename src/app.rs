@@ -1,179 +1,176 @@
-use std::fs::Metadata;
-use std::path::PathBuf;
-use std::{fs, path};
+use std::{fs::DirEntry, process::Command};
 
-use ratatui::style::{Color, Style};
-use ratatui::text::{Span, Text};
 use ratatui::widgets::ListState;
 
-use crate::utils::get_file_name;
+use crate::utils::{get_dir_items, get_parent_dir};
 
-pub struct App<'a> {
-    pub title: &'a str,
-    pub enhanced_graphics: bool,
-    pub file_list: DirItemList,
-    // pub filelist_state: FileListState<&'a str>,
-    pub exit_program: bool,
+#[derive(Debug, PartialEq)]
+pub enum AppState {
+    Running,
+    Exit,
 }
 
-pub struct DirItemList {
-    pub items: Vec<DirItem>,
+pub struct DirListState {
     pub state: ListState,
+    pub items: Vec<DirEntry>,
 }
 
-#[derive(Debug, Clone)]
-pub struct DirItem {
-    pub filename: String,
-    pub file_path: PathBuf,
-    pub is_dir: bool,
-}
-
-impl DirItem {
-    fn new(filename: &str, file_path: PathBuf, is_dir: bool) -> Self {
+impl DirListState {
+    fn new(items: Vec<DirEntry>) -> Self {
         Self {
-            filename: filename.to_string(),
-            file_path: file_path,
-            is_dir: is_dir,
+            state: ListState::default(),
+            items,
         }
     }
-}
 
-impl From<&DirItem> for Text<'_> {
-    fn from(dir_item: &DirItem) -> Self {
-        let text = if dir_item.file_path.is_dir() {
-            format!("{} (directory)", dir_item.filename)
-        } else {
-            dir_item.filename.clone()
-        };
-        Text::from(Span::styled(
-            text,
-            if dir_item.file_path.is_dir() {
-                Style::default().fg(Color::Yellow)
-            } else {
-                Style::default()
-            },
-        ))
+    pub fn set_items(&mut self, items: Vec<DirEntry>) {
+        self.items = items;
+        self.state = ListState::default();
     }
 }
 
-impl Into<Text<'_>> for DirItem {
-    fn into(self) -> Text<'static> {
-        let text = if self.is_dir {
-            format!("{} (directory)", self.filename)
-        } else {
-            self.filename.clone()
-        };
-        Text::from(Span::styled(
-            text,
-            if self.is_dir {
-                Style::default().fg(Color::Yellow)
-            } else {
-                Style::default()
-            },
-        ))
-    }
+pub struct App {
+    pub app_state: AppState,
+    pub current_dir: String,
+    pub parent_dir: String,
+    pub dir_items: DirListState,
+    pub show_hidden: bool,
 }
 
-// impl DirItemList {
-//     pub fn with_items(items: Vec<DirItem>) -> Self {
-//         Self {
-//             state: ListState::default(),
-//             items,
-//         }
-//     }
-
-//     pub fn next(&mut self) {
-//         let i = match self.state.selected() {
-//             Some(i) => {
-//                 if i >= self.items.len() - 1 {
-//                     0
-//                 } else {
-//                     i + 1
-//                 }
-//             }
-//             None => 0,
-//         };
-//         self.state.select(Some(i));
-//     }
-
-//     pub fn previous(&mut self) {
-//         let i = match self.state.selected() {
-//             Some(i) => {
-//                 if i == 0 {
-//                     self.items.len() - 1
-//                 } else {
-//                     i - 1
-//                 }
-//             }
-//             None => 0,
-//         };
-//         self.state.select(Some(i));
-//     }
-// }
-
-impl FromIterator<DirItem> for DirItemList {
-    fn from_iter<T: IntoIterator<Item = (DirItem)>>(iter: T) -> Self {
-        let items = iter.into_iter().collect();
-
-        let state = ListState::default();
-        Self { items, state }
-    }
-}
-
-impl<'a> App<'a> {
-    pub fn new(title: &'a str, enhanced_graphics: bool) -> Self {
-        let mut cur_dir: Vec<DirItem> = vec![];
-
-        if let Ok(current_dir) = fs::read_dir(".") {
-            for item in current_dir {
-                if let Ok(item) = item {
-                    let current_file = DirItem::new(
-                        &get_file_name(&item.file_name()),
-                        item.path(),
-                        item.metadata().unwrap().is_dir(),
-                    );
-                    cur_dir.push(current_file);
-                }
-            }
-        } else {
-            // TODO replace with logging
-            eprintln!("Error reading directory");
-        }
-
+impl App {
+    pub fn new(init_dir: String) -> Self {
         App {
-            title,
-            file_list: DirItemList::from_iter(cur_dir),
-            enhanced_graphics,
-            exit_program: false,
+            app_state: AppState::Running,
+            current_dir: init_dir.clone(),
+            parent_dir: get_parent_dir(&init_dir.clone()),
+            dir_items: DirListState::new(get_dir_items(&init_dir.clone(), &false)),
+            show_hidden: false,
         }
     }
 
-    pub fn on_q(&mut self) {
-        self.exit_program = true
+    pub fn quit_app(&mut self) {
+        self.app_state = AppState::Exit;
     }
 
-    pub fn on_left(&mut self) {
+    pub fn toggle_hidden(&mut self) {
+        if self.show_hidden {
+            self.show_hidden = false;
+        } else {
+            self.show_hidden = true;
+        }
+        self.dir_items
+            .set_items(get_dir_items(&self.current_dir, &self.show_hidden));
+    }
+
+    pub fn move_cursor_left(&mut self) {
+        // TODO navigate through the table
+    }
+
+    pub fn move_cursor_right(&mut self) {
+        // TODO navigate through the table
+    }
+
+    pub fn move_cursor_up(&mut self) {
+        self.dir_items.state.select_previous();
+    }
+
+    pub fn move_cursor_down(&mut self) {
+        self.dir_items.state.select_next();
+    }
+
+    pub fn switch_panes(&mut self) {
         // TODO switch between left and right
     }
 
-    pub fn on_right(&mut self) {
-        // TODO switch between left and right
-    }
-
-    pub fn on_up(&mut self) {
-        self.file_list.state.select_previous();
-    }
-
-    pub fn on_down(&mut self) {
-        self.file_list.state.select_next();
-    }
-
-    pub fn on_tab(&mut self) {}
-
-    pub fn on_del(&mut self) {
+    pub fn delete_selected(&mut self) {
         // TODO move file to user's trash
     }
-    pub fn on_backspace(&mut self) {}
 
-    pub fn open_selection(&mut self) {}
+    pub fn nav_up_dir(&mut self) {
+        self.current_dir = self.parent_dir.clone();
+        self.parent_dir = get_parent_dir(&self.current_dir);
+        self.dir_items
+            .set_items(get_dir_items(&self.current_dir, &self.show_hidden));
+    }
+
+    pub fn open_selected(&mut self) {
+        let selected_index = self.dir_items.state.selected().unwrap();
+        let selected_entry = &self.dir_items.items[selected_index];
+        if selected_entry.metadata().unwrap().is_dir() {
+            self.current_dir = selected_entry.path().to_str().unwrap().to_owned();
+            self.parent_dir = selected_entry
+                .path()
+                .parent()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .to_owned();
+            self.dir_items
+                .set_items(get_dir_items(&self.current_dir, &self.show_hidden));
+        } else {
+            let selected_entry_path = selected_entry.path().to_str().unwrap().to_owned();
+            let _open_file = Command::new("xdg-open")
+                .arg(selected_entry_path)
+                // .arg("&")
+                .output()
+                .expect("Failed to open file {selected_entry_path}");
+            // TODO need to handle opening files on Windows/Mac in the future
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::env;
+
+    struct TestContext {
+        app: App,
+    }
+
+    impl Drop for TestContext {
+        fn drop(&mut self) {
+            println!("Test teardown...");
+        }
+    }
+
+    fn setup() -> TestContext {
+        println!("Test setup...");
+        let init_dir = env::current_dir()
+            .unwrap()
+            .as_os_str()
+            .to_os_string()
+            .into_string();
+        TestContext {
+            app: App::new(init_dir.unwrap()),
+        }
+    }
+
+    #[test]
+    fn test_app_state() {
+        let test_app = setup();
+        assert_eq!(test_app.app.app_state, AppState::Running)
+    }
+
+    #[test]
+    fn test_app_exit() {
+        let mut test_app = setup();
+        test_app.app.quit_app();
+        assert_eq!(test_app.app.app_state, AppState::Exit);
+    }
+
+    #[test]
+    fn test_open_another_dir() {}
+
+    #[test]
+    fn test_open_file() {}
+
+    #[test]
+    fn test_moving_cursor_up() {}
+
+    #[test]
+    fn test_moving_cursor_down() {}
+
+    #[test]
+    fn test_nav_parent_dir() {}
 }
