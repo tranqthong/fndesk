@@ -60,6 +60,8 @@ mod tests {
         let init_dir = get_init_dirpath();
         let result = get_dir_items(&init_dir.into_string().unwrap(), &false);
 
+        // there should only be five items found in the project root folder:
+        // src/, target/, Cargo.lock, Cargo.toml, README.md
         assert_eq!(5, result.len());
     }
 
@@ -68,6 +70,8 @@ mod tests {
         let init_dir = get_init_dirpath();
         let result = get_dir_items(&init_dir.into_string().unwrap(), &true);
 
+        // like the above, but with 8 counting 3 hidden dir/files:
+        // .git/, .gitignore, .vscode/
         assert_eq!(8, result.len());
     }
 }
