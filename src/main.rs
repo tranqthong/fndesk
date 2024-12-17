@@ -15,7 +15,9 @@ struct Cli {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    env_logger::init();
+    let env_log = env_logger::Env::default();
+    env_logger::init_from_env(env_log);
+
     let cli: Cli = argh::from_env();
     let tick_rate = Duration::from_millis(cli.tick_rate);
     #[cfg(feature = "crossterm")]

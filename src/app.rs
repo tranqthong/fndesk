@@ -1,6 +1,6 @@
 use std::{fs::DirEntry, process::Command};
 
-use crossterm::event::{KeyCode, KeyEvent, KeyEventKind};
+use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::ListState;
 
 use crate::utils::{get_dir_items, get_parent_dir};
@@ -49,21 +49,19 @@ impl App {
         }
     }
 
-    pub fn handle_keypress(&mut self, key: KeyEvent) {
-        if key.kind == KeyEventKind::Press {
-            match key.code {
-                KeyCode::Char('q') => self.quit_app(),
-                KeyCode::Char('h') => self.toggle_hidden(),
-                KeyCode::Enter | KeyCode::Char(' ') => self.open_selected(),
-                KeyCode::Up => self.move_cursor_up(),
-                KeyCode::Down => self.move_cursor_down(),
-                KeyCode::Left => self.move_cursor_left(),
-                KeyCode::Right => self.move_cursor_right(),
-                KeyCode::Tab | KeyCode::BackTab => self.switch_panes(),
-                KeyCode::Esc | KeyCode::Backspace => self.nav_up_dir(),
-                KeyCode::Delete => self.delete_selected(),
-                _ => {}
-            }
+    pub fn handle_keypress(&mut self, key: KeyEvent){
+        match key.code {
+            KeyCode::Char('q') => self.quit_app(),
+            KeyCode::Char('h') => self.toggle_hidden(),
+            KeyCode::Enter | KeyCode::Char(' ') => self.open_selected(),
+            KeyCode::Up => self.move_cursor_up(),
+            KeyCode::Down => self.move_cursor_down(),
+            KeyCode::Left => self.move_cursor_left(),
+            KeyCode::Right => self.move_cursor_right(),
+            KeyCode::Tab | KeyCode::BackTab => self.switch_panes(),
+            KeyCode::Esc | KeyCode::Backspace => self.nav_up_dir(),
+            KeyCode::Delete => self.delete_selected(),
+            _ => {}
         }
     }
 
@@ -137,7 +135,7 @@ impl App {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::env;
+    use std::{env, fs};
 
     struct TestContext {
         app: App,
@@ -181,11 +179,34 @@ mod tests {
     fn test_open_file() {}
 
     #[test]
-    fn test_moving_cursor_up() {}
+    fn test_moving_cursor_up() {
+        let mut test_app = setup();
+        test_app.app.move_cursor_up();
+        let result = test_app.app.dir_items.state.selected();
+
+        assert_ne!(result, None);
+    }
 
     #[test]
-    fn test_moving_cursor_down() {}
+    fn test_moving_cursor_down() {
+        let mut test_app = setup();
+        test_app.app.move_cursor_down();
+        let result = test_app.app.dir_items.state.selected();
+
+        assert_ne!(result, None);
+    }
 
     #[test]
-    fn test_nav_parent_dir() {}
+    fn test_nav_parent_dir() {
+        let mut test_app = setup();
+        test_app.app.nav_up_dir();
+        let result = &test_app.app.current_dir;
+        let expected = fs::canonicalize("../")
+            .unwrap()
+            .into_os_string()
+            .into_string()
+            .unwrap();
+
+        assert_eq!(result, &expected);
+    }
 }

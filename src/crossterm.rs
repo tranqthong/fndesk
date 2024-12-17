@@ -1,3 +1,4 @@
+use log::error;
 use std::error::Error;
 use std::io;
 use std::time::{Duration, Instant};
@@ -19,7 +20,7 @@ pub fn run(tick_rate: Duration) -> Result<(), Box<dyn Error>> {
     ratatui::restore();
 
     if let Err(err) = app_result {
-        println!("{err:?}"); // TODO replace with logging later
+        error!("{err:?}");
     }
     Ok(())
 }

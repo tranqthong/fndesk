@@ -30,8 +30,8 @@ pub fn get_dir_items(selected_dir: &String, show_hidden: &bool) -> Vec<DirEntry>
 }
 
 pub fn get_init_dirpath() -> OsString {
-    let current_dir = env::current_dir().unwrap();
-    current_dir.as_os_str().to_os_string()
+    let current_dir = env::current_dir().expect("Problem opening current directory");
+    current_dir.into()
 }
 
 #[cfg(test)]
