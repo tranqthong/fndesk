@@ -22,7 +22,7 @@ pub fn get_dir_items(selected_dir: &String, show_hidden: &bool) -> Vec<DirEntry>
         .map(|x| x.unwrap())
         .collect();
     if !show_hidden {
-        item_paths.retain(|x| !x.file_name().into_string().unwrap().contains("."));
+        item_paths.retain(|x| !x.file_name().into_string().unwrap().starts_with("."));
     }
     item_paths.sort_by_key(|x| x.path());
 
@@ -41,17 +41,33 @@ mod tests {
     #[test]
     fn test_get_init_dirpath() {
         let result = get_init_dirpath();
-        let expected = env::current_dir()
-            .unwrap()
-            .into_os_string()
-            .into_string()
-            .unwrap();
-        assert_eq!(expected, result.into_string().unwrap());
+        let expected = fs::canonicalize(PathBuf::from(".")).unwrap();
+
+        assert_eq!(expected, result);
     }
 
     #[test]
-    fn test_get_parent_dir() {}
+    fn test_get_parent_dir() {
+        let init_dir = get_init_dirpath();
+        let result = get_parent_dir(&init_dir.into_string().unwrap());
+        let expected = fs::canonicalize(PathBuf::from("..")).unwrap();
+
+        assert_eq!(expected.to_str().unwrap().to_string(), result);
+    }
 
     #[test]
-    fn test_get_dir_items() {}
+    fn test_get_dir_items_no_hidden() {
+        let init_dir = get_init_dirpath();
+        let result = get_dir_items(&init_dir.into_string().unwrap(), &false);
+
+        assert_eq!(5, result.len());
+    }
+
+    #[test]
+    fn test_get_dir_items_all() {
+        let init_dir = get_init_dirpath();
+        let result = get_dir_items(&init_dir.into_string().unwrap(), &true);
+
+        assert_eq!(8, result.len());
+    }
 }

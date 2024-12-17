@@ -9,6 +9,7 @@ use ratatui::{
 use crate::app::App;
 
 pub fn draw(frame: &mut Frame, app: &mut App) {
+    // This is a potential UI usage when I decide to add two column panes
     // let vertical_block = Layout::vertical([
     //     Constraint::Length(1),
     //     Constraint::Min(0),
