@@ -1,4 +1,4 @@
-use std::{fs::DirEntry, process::Command};
+use std::{fs::DirEntry, path::PathBuf, process::Command};
 
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::ListState;
@@ -32,14 +32,14 @@ impl DirListState {
 
 pub struct App {
     pub app_state: AppState,
-    pub current_dir: String,
-    pub parent_dir: String,
+    pub current_dir: PathBuf,
+    pub parent_dir: PathBuf,
     pub dir_items: DirListState,
     pub show_hidden: bool,
 }
 
 impl App {
-    pub fn new(init_dir: String) -> Self {
+    pub fn new(init_dir: PathBuf) -> Self {
         App {
             app_state: AppState::Running,
             current_dir: init_dir.clone(),
@@ -49,7 +49,7 @@ impl App {
         }
     }
 
-    pub fn handle_keypress(&mut self, key: KeyEvent){
+    pub fn handle_keypress(&mut self, key: KeyEvent) {
         match key.code {
             KeyCode::Char('q') => self.quit_app(),
             KeyCode::Char('h') => self.toggle_hidden(),
@@ -95,6 +95,17 @@ impl App {
         // TODO switch between left and right
     }
 
+    fn copy_selected(&mut self) {
+        let selected_idx = self.dir_items.state.selected().expect("Nothing selected");
+        let selected_entry = &self.dir_items.items[selected_idx];
+
+        let selected_filename = selected_entry.path();
+    }
+
+    fn paste_item(&mut self) {
+        // paste the file/dir
+    }
+
     fn delete_selected(&mut self) {
         // TODO move file to user's trash
     }
@@ -107,17 +118,15 @@ impl App {
     }
 
     fn open_selected(&mut self) {
-        let selected_index = self.dir_items.state.selected().unwrap();
-        let selected_entry = &self.dir_items.items[selected_index];
+        let selected_idx = self.dir_items.state.selected().unwrap();
+        let selected_entry = &self.dir_items.items[selected_idx];
         if selected_entry.metadata().unwrap().is_dir() {
-            self.current_dir = selected_entry.path().to_str().unwrap().to_owned();
+            self.current_dir = selected_entry.path();
             self.parent_dir = selected_entry
                 .path()
                 .parent()
-                .unwrap()
-                .to_str()
-                .unwrap()
-                .to_owned();
+                .expect("Parent Directory does not exists or invalid permission to access")
+                .to_path_buf();
             self.dir_items
                 .set_items(get_dir_items(&self.current_dir, &self.show_hidden));
         } else {
@@ -149,13 +158,9 @@ mod tests {
 
     fn setup() -> TestContext {
         println!("Test setup...");
-        let init_dir = env::current_dir()
-            .unwrap()
-            .as_os_str()
-            .to_os_string()
-            .into_string();
+        let init_dir = env::current_dir().unwrap();
         TestContext {
-            app: App::new(init_dir.unwrap()),
+            app: App::new(init_dir),
         }
     }
 
@@ -201,11 +206,7 @@ mod tests {
         let mut test_app = setup();
         test_app.app.nav_up_dir();
         let result = &test_app.app.current_dir;
-        let expected = fs::canonicalize("../")
-            .unwrap()
-            .into_os_string()
-            .into_string()
-            .unwrap();
+        let expected = fs::canonicalize("../").unwrap();
 
         assert_eq!(result, &expected);
     }

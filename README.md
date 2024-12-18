@@ -37,6 +37,8 @@ See [Cargo.toml](Cargo.toml)
 ## Roadmap
 - Implement basic file IO
 - deleting a file sends it to trash/recycle bin
+- differentiate between file and dir
+- async IO
 - set up github workflow
 ### Nice to haves
 - Windows support

@@ -14,7 +14,7 @@ pub fn run(tick_rate: Duration) -> Result<(), Box<dyn Error>> {
     let mut terminal = ratatui::init();
     let init_dir = utils::get_init_dirpath();
     // should always be able grab the current directory from which the program is started
-    let app = App::new(init_dir.into_string().unwrap());
+    let app = App::new(init_dir);
     let app_result = run_app(&mut terminal, app, tick_rate);
 
     ratatui::restore();

@@ -38,9 +38,9 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         .split(frame.area());
 
     let title_block = Block::default().style(Style::default());
-
+    let current_dir_path = app.current_dir.clone().into_os_string().into_string();
     let title = Paragraph::new(Text::styled(
-        &app.current_dir,
+        current_dir_path.unwrap(),
         Style::default().fg(Color::White).bg(Color::Magenta),
     ))
     .block(title_block);
