@@ -1,14 +1,11 @@
 use std::{
     env,
     fs::{self, DirEntry},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
-pub fn get_parent_dir(selected_dir: &PathBuf) -> PathBuf {
-    let path = PathBuf::from(selected_dir);
-    path.parent()
-        .expect("Parent Directory doesn't exist or invalid permissions")
-        .to_path_buf()
+pub fn get_parent_dir(selected_dir: &Path) -> PathBuf {
+    selected_dir.parent().unwrap_or(selected_dir).to_path_buf()
 }
 
 pub fn get_dir_items(selected_dir: &PathBuf, show_hidden: &bool) -> Vec<DirEntry> {
@@ -27,6 +24,7 @@ pub fn get_dir_items(selected_dir: &PathBuf, show_hidden: &bool) -> Vec<DirEntry
 pub fn get_init_dirpath() -> PathBuf {
     env::current_dir().expect("Current Directory does not exists or invalid permissions")
 }
+
 
 #[cfg(test)]
 mod tests {

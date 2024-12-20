@@ -55,6 +55,10 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     // let mut dir_item_state = DirListState::new(item_list);
     let dir_items_list = List::new(item_list).highlight_style(Style::default().bg(Color::Cyan));
 
+    let status_contents = Paragraph::new("Test");
+    let status_bar = Paragraph::left_aligned(status_contents);
+
     frame.render_widget(title, rect_sections[0]);
     frame.render_stateful_widget(dir_items_list, rect_sections[1], &mut app.dir_items.state);
+    frame.render_widget(status_bar.block(Block::bordered()), rect_sections[2]);
 }

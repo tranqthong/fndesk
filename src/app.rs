@@ -1,7 +1,8 @@
-use std::{fs::DirEntry, path::PathBuf, process::Command};
+use std::{error::Error, fs::DirEntry, path::PathBuf, process::Command};
 
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::ListState;
+use trash;
 
 use crate::utils::{get_dir_items, get_parent_dir};
 
@@ -36,6 +37,7 @@ pub struct App {
     pub parent_dir: PathBuf,
     pub dir_items: DirListState,
     pub show_hidden: bool,
+    pub status_text: String,
 }
 
 impl App {
@@ -46,6 +48,7 @@ impl App {
             parent_dir: get_parent_dir(&init_dir.clone()),
             dir_items: DirListState::new(get_dir_items(&init_dir.clone(), &false)),
             show_hidden: false,
+            status_text: String::from("Status Text Placeholder"),
         }
     }
 
@@ -76,11 +79,11 @@ impl App {
     }
 
     fn move_cursor_left(&mut self) {
-        // TODO navigate through the table
+        // TODO implement when two column pane is implemented
     }
 
     fn move_cursor_right(&mut self) {
-        // TODO navigate through the table
+        // TODO implement when two column pane is implemented
     }
 
     fn move_cursor_up(&mut self) {
@@ -92,14 +95,16 @@ impl App {
     }
 
     fn switch_panes(&mut self) {
-        // TODO switch between left and right
+        // TODO implement when two column pane is implemented
     }
 
     fn copy_selected(&mut self) {
-        let selected_idx = self.dir_items.state.selected().expect("Nothing selected");
+        let selected_idx = self.dir_items.state.selected().unwrap_or(0);
         let selected_entry = &self.dir_items.items[selected_idx];
 
         let selected_filename = selected_entry.path();
+        // fs::copy(selected_filename.into_os_string(), "test.txt")?;
+        // Ok(())
     }
 
     fn paste_item(&mut self) {
@@ -107,36 +112,47 @@ impl App {
     }
 
     fn delete_selected(&mut self) {
-        // TODO move file to user's trash
+        let selected_idx = self.dir_items.state.selected().unwrap_or(0);
+        let selected_entry = &self.dir_items.items[selected_idx];
+
+        
+
+
     }
 
     fn nav_up_dir(&mut self) {
-        self.current_dir = self.parent_dir.clone();
-        self.parent_dir = get_parent_dir(&self.current_dir);
-        self.dir_items
-            .set_items(get_dir_items(&self.current_dir, &self.show_hidden));
+        let new_current_dirpath = self.parent_dir.clone();
+        let new_parent_dirpath = get_parent_dir(&new_current_dirpath);
+
+        // we only want to be able to navigate up to a parent if we're not already in the root directory
+        if new_parent_dirpath != self.current_dir {
+            self.parent_dir = new_parent_dirpath;
+            self.current_dir = new_current_dirpath;
+
+            self.dir_items
+                .set_items(get_dir_items(&self.current_dir, &self.show_hidden));
+        }
     }
 
     fn open_selected(&mut self) {
-        let selected_idx = self.dir_items.state.selected().unwrap();
+        let selected_idx = self.dir_items.state.selected().unwrap_or(0);
         let selected_entry = &self.dir_items.items[selected_idx];
+
         if selected_entry.metadata().unwrap().is_dir() {
+            let new_parent_dir = self.current_dir.clone();
             self.current_dir = selected_entry.path();
-            self.parent_dir = selected_entry
-                .path()
-                .parent()
-                .expect("Parent Directory does not exists or invalid permission to access")
-                .to_path_buf();
+            self.parent_dir = new_parent_dir.to_owned();
             self.dir_items
                 .set_items(get_dir_items(&self.current_dir, &self.show_hidden));
         } else {
             let selected_entry_path = selected_entry.path().to_str().unwrap().to_owned();
+
+            // TODO need to handle opening files on Windows/Mac in the future
             let _open_file = Command::new("xdg-open")
                 .arg(selected_entry_path)
                 // .arg("&")
                 .output()
                 .expect("Failed to open file {selected_entry_path}");
-            // TODO need to handle opening files on Windows/Mac in the future
         }
     }
 }

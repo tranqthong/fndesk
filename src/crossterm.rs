@@ -31,7 +31,7 @@ fn run_app<B: Backend>(
     tick_rate: Duration,
 ) -> io::Result<()> {
     let mut last_tick = Instant::now();
-    while app.app_state == AppState::Running {
+    while app.app_state != AppState::Exit {
         terminal.draw(|f| {
             ui::draw(f, &mut app);
         })?;
