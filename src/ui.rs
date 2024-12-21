@@ -1,9 +1,7 @@
-use std::rc::Rc;
-
 use ratatui::{
     layout::{Constraint, Direction, Layout},
-    style::{Color, Style},
-    text::{Text, ToText},
+    style::Style,
+    text::Text,
     widgets::{Block, List, ListItem, Paragraph},
     Frame,
 };
