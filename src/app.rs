@@ -123,10 +123,10 @@ impl App {
 
             match trash::delete(selected_entry.path()) {
                 Ok(_) => {
-                    self.status_text = "Deleted {selected_entry.file_name():?}".to_string();
+                    self.status_text = format!("Deleted {:?}", selected_entry.file_name());
                 }
                 Err(e) => {
-                    self.status_text = "Error {e:?}".to_string();
+                    self.status_text = format!("Error {e:?}");
                 }
             };
 

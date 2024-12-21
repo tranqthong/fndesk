@@ -53,7 +53,6 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         .map(|x| ListItem::new(x.file_name().into_string().unwrap()))
         .collect();
 
-    // let mut dir_item_state = DirListState::new(item_list);
     let dir_items_list = List::new(item_list).highlight_style(SELECTED_ENTRY_STYLE);
 
     let status_contents = Paragraph::new(app.status_text.clone());
