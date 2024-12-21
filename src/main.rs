@@ -2,6 +2,7 @@ use argh::FromArgs;
 use std::{error::Error, time::Duration};
 
 mod app;
+mod colors;
 #[cfg(feature = "crossterm")]
 mod crossterm;
 mod ui;

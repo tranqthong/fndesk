@@ -1,12 +1,15 @@
+use std::rc::Rc;
+
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     style::{Color, Style},
-    text::Text,
+    text::{Text, ToText},
     widgets::{Block, List, ListItem, Paragraph},
     Frame,
 };
 
-use crate::app::App;
+use crate::{app::App, colors::SELECTED_ENTRY_STYLE};
+use crate::colors;
 
 pub fn draw(frame: &mut Frame, app: &mut App) {
     // This is a potential UI usage when I decide to add two column panes
@@ -41,7 +44,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     let current_dir_path = app.current_dir.clone().into_os_string().into_string();
     let title = Paragraph::new(Text::styled(
         current_dir_path.unwrap(),
-        Style::default().fg(Color::White).bg(Color::Magenta),
+        colors::SELECTED_DIR_STYLE,
     ))
     .block(title_block);
 
@@ -53,12 +56,12 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         .collect();
 
     // let mut dir_item_state = DirListState::new(item_list);
-    let dir_items_list = List::new(item_list).highlight_style(Style::default().bg(Color::Cyan));
+    let dir_items_list = List::new(item_list).highlight_style(SELECTED_ENTRY_STYLE);
 
-    let status_contents = Paragraph::new("Test");
+    let status_contents = Paragraph::new(app.status_text.clone());
     let status_bar = Paragraph::left_aligned(status_contents);
 
     frame.render_widget(title, rect_sections[0]);
     frame.render_stateful_widget(dir_items_list, rect_sections[1], &mut app.dir_items.state);
-    frame.render_widget(status_bar.block(Block::bordered()), rect_sections[2]);
+    frame.render_widget(status_bar, rect_sections[2]);
 }

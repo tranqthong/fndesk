@@ -1,8 +1,7 @@
-use std::{error::Error, fs::DirEntry, path::PathBuf, process::Command};
+use std::{fs::DirEntry, path::PathBuf, process::Command, rc::Rc};
 
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::ListState;
-use trash;
 
 use crate::utils::{get_dir_items, get_parent_dir};
 
@@ -42,11 +41,12 @@ pub struct App {
 
 impl App {
     pub fn new(init_dir: PathBuf) -> Self {
+        let init_dir_ref = Rc::new(init_dir);
         App {
             app_state: AppState::Running,
-            current_dir: init_dir.clone(),
-            parent_dir: get_parent_dir(&init_dir.clone()),
-            dir_items: DirListState::new(get_dir_items(&init_dir.clone(), &false)),
+            current_dir: init_dir_ref.to_path_buf(),
+            parent_dir: get_parent_dir(&Rc::clone(&init_dir_ref)),
+            dir_items: DirListState::new(get_dir_items(&Rc::clone(&init_dir_ref), &false)),
             show_hidden: false,
             status_text: String::from("Status Text Placeholder"),
         }
@@ -66,6 +66,11 @@ impl App {
             KeyCode::Delete => self.delete_selected(),
             _ => {}
         }
+    }
+
+    pub fn refresh_dirlist(&mut self) {
+        self.dir_items
+            .set_items(get_dir_items(&self.current_dir, &self.show_hidden));
     }
 
     fn quit_app(&mut self) {
@@ -112,12 +117,24 @@ impl App {
     }
 
     fn delete_selected(&mut self) {
-        let selected_idx = self.dir_items.state.selected().unwrap_or(0);
-        let selected_entry = &self.dir_items.items[selected_idx];
+        let selected_idx = self.dir_items.state.selected();
+        if selected_idx.is_some() {
+            let selected_entry = &self.dir_items.items[selected_idx.unwrap()];
 
-        
+            match trash::delete(selected_entry.path()) {
+                Ok(_) => {
+                    self.status_text = "Deleted {selected_entry.file_name():?}".to_string();
+                }
+                Err(e) => {
+                    self.status_text = "Error {e:?}".to_string();
+                }
+            };
 
-
+            self.dir_items
+                .set_items(get_dir_items(&self.current_dir, &self.show_hidden));
+        } else {
+            self.status_text = "No file/directory selected!".to_string();
+        }
     }
 
     fn nav_up_dir(&mut self) {
@@ -160,7 +177,10 @@ impl App {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::{env, fs};
+    use std::{
+        env,
+        fs::{self, File},
+    };
 
     struct TestContext {
         app: App,
@@ -198,6 +218,14 @@ mod tests {
 
     #[test]
     fn test_open_file() {}
+
+    #[test]
+    fn test_delete_file() {
+        File::create_new("test_file.txt").unwrap();
+        let mut test_app = setup();
+
+        // let test_file_idx = test_app.app.dir_items.
+    }
 
     #[test]
     fn test_moving_cursor_up() {
