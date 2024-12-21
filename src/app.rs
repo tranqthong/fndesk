@@ -221,10 +221,22 @@ mod tests {
 
     #[test]
     fn test_delete_file() {
-        File::create_new("test_file.txt").unwrap();
-        let mut test_app = setup();
+        let test_file_name = "test_file.txt";
+        File::create_new(test_file_name).unwrap();
 
-        // let test_file_idx = test_app.app.dir_items.
+        let mut test_app = setup();
+        let mut target_idx = 0;
+        for (entry_idx, dir_entry) in test_app.app.dir_items.items.iter().enumerate() {
+            if dir_entry.file_name() == "test_file.txt" {
+                target_idx = entry_idx;
+                break;
+            }
+        }
+
+        test_app.app.dir_items.state.select(Some(target_idx));
+        test_app.app.delete_selected();
+
+        assert!(File::open(test_file_name).is_err());
     }
 
     #[test]
