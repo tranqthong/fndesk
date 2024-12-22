@@ -1,4 +1,9 @@
-use std::{fs::DirEntry, path::PathBuf, process::Command, rc::Rc};
+use std::{
+    fs::{self, DirEntry},
+    path::PathBuf,
+    process::Command,
+    rc::Rc,
+};
 
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::ListState;
@@ -37,6 +42,7 @@ pub struct App {
     pub dir_items: DirListState,
     pub show_hidden: bool,
     pub status_text: String,
+    pub clipboard: Option<PathBuf>,
 }
 
 impl App {
@@ -49,6 +55,7 @@ impl App {
             dir_items: DirListState::new(get_dir_items(&Rc::clone(&init_dir_ref), &false)),
             show_hidden: false,
             status_text: String::from("Status Text Placeholder"),
+            clipboard: None,
         }
     }
 
@@ -104,36 +111,41 @@ impl App {
     }
 
     fn copy_selected(&mut self) {
-        let selected_idx = self.dir_items.state.selected().unwrap_or(0);
-        let selected_entry = &self.dir_items.items[selected_idx];
-
-        let selected_filename = selected_entry.path();
-        // fs::copy(selected_filename.into_os_string(), "test.txt")?;
-        // Ok(())
+        match self.dir_items.state.selected() {
+            Some(idx) => {
+                self.clipboard = Some(self.dir_items.items[idx].path());
+                self.status_text = format!("Copying {:?}", &self.dir_items.items[idx])
+            }
+            None => self.status_text = "No file/directory selected!".to_string(),
+        };
     }
 
     fn paste_item(&mut self) {
         // paste the file/dir
+        let source_path = self.clipboard.clone().unwrap();
+        let result = fs::copy(source_path, &self.current_dir);
+        match result {
+            Ok(_) => self.status_text = "Pasted from clipboard".to_string(),
+            Err(e) => self.status_text = format!("Unable to paste: {e:?}"),
+        }
+        self.refresh_dirlist();
     }
 
     fn delete_selected(&mut self) {
-        let selected_idx = self.dir_items.state.selected();
-        if selected_idx.is_some() {
-            let selected_entry = &self.dir_items.items[selected_idx.unwrap()];
-
-            match trash::delete(selected_entry.path()) {
-                Ok(_) => {
-                    self.status_text = format!("Deleted {:?}", selected_entry.file_name());
-                }
-                Err(e) => {
-                    self.status_text = format!("Error {e:?}");
-                }
-            };
-
-            self.dir_items
-                .set_items(get_dir_items(&self.current_dir, &self.show_hidden));
-        } else {
-            self.status_text = "No file/directory selected!".to_string();
+        match self.dir_items.state.selected() {
+            Some(idx) => {
+                let selected_entry = &self.dir_items.items[idx];
+                match trash::delete(selected_entry.path()) {
+                    Ok(_) => {
+                        self.status_text = format!("Deleted {:?}", selected_entry.file_name());
+                    }
+                    Err(e) => {
+                        self.status_text = format!("Error {e:?}");
+                    }
+                };
+                self.refresh_dirlist();
+            }
+            None => self.status_text = "No file/directory selected!".to_string(),
         }
     }
 
@@ -146,8 +158,7 @@ impl App {
             self.parent_dir = new_parent_dirpath;
             self.current_dir = new_current_dirpath;
 
-            self.dir_items
-                .set_items(get_dir_items(&self.current_dir, &self.show_hidden));
+            self.refresh_dirlist();
         }
     }
 
@@ -159,8 +170,7 @@ impl App {
             let new_parent_dir = self.current_dir.clone();
             self.current_dir = selected_entry.path();
             self.parent_dir = new_parent_dir.to_owned();
-            self.dir_items
-                .set_items(get_dir_items(&self.current_dir, &self.show_hidden));
+            self.refresh_dirlist();
         } else {
             let selected_entry_path = selected_entry.path().to_str().unwrap().to_owned();
 
@@ -227,7 +237,7 @@ mod tests {
         let mut test_app = setup();
         let mut target_idx = 0;
         for (entry_idx, dir_entry) in test_app.app.dir_items.items.iter().enumerate() {
-            if dir_entry.file_name() == "test_file.txt" {
+            if dir_entry.file_name() == test_file_name {
                 target_idx = entry_idx;
                 break;
             }
@@ -237,6 +247,35 @@ mod tests {
         test_app.app.delete_selected();
 
         assert!(File::open(test_file_name).is_err());
+    }
+
+    #[test]
+    fn test_file_copy() {
+        let test_file_name = "copy_test.txt";
+        File::create_new(test_file_name).unwrap();
+
+        let mut test_app = setup();
+        let mut target_idx = 0;
+        for (entry_idx, dir_entry) in test_app.app.dir_items.items.iter().enumerate() {
+            if dir_entry.file_name() == test_file_name {
+                target_idx = entry_idx;
+                break;
+            }
+        }
+        test_app.app.dir_items.state.select(Some(target_idx));
+        test_app.app.copy_selected();
+
+        let result = test_app.app.clipboard.clone();
+        let mut expected = PathBuf::new();
+        expected.push(env::current_dir().unwrap());
+        expected.push(test_file_name);
+
+        assert_eq!(result.unwrap(), expected);
+
+        match trash::delete(expected) {
+            Ok(_) => println!("Deleted copy_test.txt"),
+            Err(_) => println!("Unable to delete copy_text.txt"),
+        };
     }
 
     #[test]

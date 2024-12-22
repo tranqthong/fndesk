@@ -6,8 +6,8 @@ use ratatui::{
     Frame,
 };
 
-use crate::{app::App, colors::SELECTED_ENTRY_STYLE};
 use crate::colors;
+use crate::{app::App, colors::SELECTED_ENTRY_STYLE};
 
 pub fn draw(frame: &mut Frame, app: &mut App) {
     // This is a potential UI usage when I decide to add two column panes
