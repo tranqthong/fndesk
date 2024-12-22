@@ -1,7 +1,9 @@
 <!-- [![Linux build]()] -->
 
-# drawer_fm
-Basic terminal file browser
+# fndesk
+Basic terminal file browser.
+
+Note: Currently in development, things will change without any notice
 
 ## Dependencies
 - [cargo](https://github.com/rust-lang/cargo/) >= 1.83.0
@@ -27,16 +29,17 @@ See [Cargo.toml](Cargo.toml)
 - Move down: `arrow_down`
 - Move to parent directory: `backspace` or `Esc`
 - Open file or directory: `space` or `enter`
+- Quit App: 'q'
 
 #### File Operations
 - Toggle hidden files: `h`
+- Delete a file or directory: `del`
 - Rename file or directory: WIP
 - Copy file or directory: WIP
 - Move file or directory: WIP
 
 ## Roadmap
 - Implement basic file IO
-- deleting a file sends it to trash/recycle bin
 - differentiate between file and dir
 - async IO
 - set up github workflow
