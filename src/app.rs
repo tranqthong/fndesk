@@ -13,6 +13,7 @@ use crate::utils::{get_dir_items, get_parent_dir};
 #[derive(Debug, PartialEq)]
 pub enum AppState {
     Running,
+    AwaitingResponse,
     Exit,
 }
 
@@ -123,7 +124,19 @@ impl App {
     fn paste_item(&mut self) {
         // paste the file/dir
         let source_path = self.clipboard.clone().unwrap();
-        let result = fs::copy(source_path, &self.current_dir);
+        let file_name = source_path.file_name();
+
+        let mut target_path = PathBuf::new();
+        target_path.push(&self.current_dir);
+        target_path.push(file_name.unwrap());
+
+        if target_path.exists() {
+            // TODO ask if user wants to overwrite
+            self.app_state = AppState::AwaitingResponse;
+            self.status_text = "Overwrite file Y/n?".to_string();
+        }
+
+        let result = fs::copy(source_path, target_path);
         match result {
             Ok(_) => self.status_text = "Pasted from clipboard".to_string(),
             Err(e) => self.status_text = format!("Unable to paste: {e:?}"),
@@ -276,6 +289,25 @@ mod tests {
             Ok(_) => println!("Deleted copy_test.txt"),
             Err(_) => println!("Unable to delete copy_text.txt"),
         };
+    }
+
+    #[test]
+    fn test_paste_file() {
+        let test_file_name = "paste_file.txt";
+        File::create_new(test_file_name).unwrap();
+
+        let mut test_app = setup();
+        let mut target_idx = 0;
+        for (entry_idx, dir_entry) in test_app.app.dir_items.items.iter().enumerate() {
+            if dir_entry.file_name() == test_file_name {
+                target_idx = entry_idx;
+                break;
+            }
+        }
+        test_app.app.dir_items.state.select(Some(target_idx));
+        test_app.app.copy_selected();
+
+        test_app.app.paste_item();
     }
 
     #[test]

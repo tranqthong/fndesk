@@ -1,13 +1,17 @@
 use ratatui::{
-    layout::{Constraint, Direction, Layout},
+    layout::{Constraint, Direction, Flex, Layout},
+    prelude::Rect,
     style::Style,
     text::Text,
-    widgets::{Block, List, ListItem, Paragraph},
+    widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
     Frame,
 };
 
-use crate::colors;
 use crate::{app::App, colors::SELECTED_ENTRY_STYLE};
+use crate::{
+    app::AppState,
+    colors::{self, OVERWRITE_STYLE, POPUP_BLOCK_STYLE},
+};
 
 pub fn draw(frame: &mut Frame, app: &mut App) {
     // This is a potential UI usage when I decide to add two column panes
@@ -58,7 +62,29 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     let status_contents = Paragraph::new(app.status_text.clone());
     let status_bar = Paragraph::left_aligned(status_contents);
 
+    if app.app_state == AppState::AwaitingResponse {
+        let popup_block = Block::default()
+            .title("Y/n")
+            .borders(Borders::NONE)
+            .style(POPUP_BLOCK_STYLE);
+        let popup_text = Text::styled("Overwrite file? (Y/n)", OVERWRITE_STYLE);
+
+        let popup_paragraph = Paragraph::new(popup_text)
+            .block(popup_block)
+            .wrap(Wrap { trim: false });
+
+        let popup_area = popup_area(frame.area(), 60, 60);
+    }
+
     frame.render_widget(title, rect_sections[0]);
     frame.render_stateful_widget(dir_items_list, rect_sections[1], &mut app.dir_items.state);
     frame.render_widget(status_bar, rect_sections[2]);
+}
+
+fn popup_area(area: Rect, percent_x: u16, percent_y: u16) -> Rect {
+    let vertical = Layout::vertical([Constraint::Percentage(percent_y)]).flex(Flex::Center);
+    let horizontal = Layout::horizontal([Constraint::Percentage(percent_x)]).flex(Flex::Center);
+    let [area] = vertical.areas(area);
+    let [area] = horizontal.areas(area);
+    area
 }
