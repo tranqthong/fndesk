@@ -188,11 +188,10 @@ impl App {
             let selected_entry_path = selected_entry.path().to_str().unwrap().to_owned();
 
             // TODO need to handle opening files on Windows/Mac in the future
-            let _open_file = Command::new("xdg-open")
-                .arg(selected_entry_path)
-                // .arg("&")
-                .output()
-                .expect("Failed to open file {selected_entry_path}");
+            match Command::new("xdg-open").arg(selected_entry_path).output() {
+                Ok(_) => (),
+                Err(_) => self.status_text = "Unable to open file, check permissions".to_string(),
+            }
         }
     }
 }
@@ -217,7 +216,8 @@ mod tests {
 
     fn setup() -> TestContext {
         println!("Test setup...");
-        let init_dir = env::current_dir().unwrap();
+        let init_dir =
+            env::current_dir().expect("Invalid permissions or currenty directory doesn't exists.");
         TestContext {
             app: App::new(init_dir),
         }
