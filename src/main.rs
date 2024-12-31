@@ -2,10 +2,10 @@ use argh::FromArgs;
 use std::{error::Error, time::Duration};
 
 mod app;
-mod colors;
 #[cfg(feature = "crossterm")]
 mod crossterm;
 mod ui;
+mod ui_styles;
 mod utils;
 
 #[derive(Debug, FromArgs)]

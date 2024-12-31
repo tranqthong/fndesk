@@ -13,7 +13,8 @@ use crate::utils::{get_dir_items, get_parent_dir};
 #[derive(Debug, PartialEq)]
 pub enum AppState {
     Running,
-    AwaitingResponse,
+    Copying,
+    Moving,
     Exit,
 }
 
@@ -79,6 +80,16 @@ impl App {
     pub fn refresh_dirlist(&mut self) {
         self.dir_items
             .set_items(get_dir_items(&self.current_dir, &self.show_hidden));
+        self.auto_select_first();
+    }
+
+    fn auto_select_first(&mut self) {
+        match self.dir_items.state.selected() {
+            Some(_) => (),
+            None => {
+                self.dir_items.state.select_first();
+            }
+        }
     }
 
     fn quit_app(&mut self) {
@@ -115,6 +126,7 @@ impl App {
         match self.dir_items.state.selected() {
             Some(idx) => {
                 self.clipboard = Some(self.dir_items.items[idx].path());
+                self.app_state = AppState::Copying;
                 self.status_text = format!("Copying {:?}", &self.dir_items.items[idx])
             }
             None => self.status_text = "No file/directory selected!".to_string(),
@@ -132,15 +144,29 @@ impl App {
 
         if target_path.exists() {
             // TODO ask if user wants to overwrite
-            self.app_state = AppState::AwaitingResponse;
             self.status_text = "Overwrite file Y/n?".to_string();
         }
 
-        let result = fs::copy(source_path, target_path);
-        match result {
-            Ok(_) => self.status_text = "Pasted from clipboard".to_string(),
+        let file_copy = fs::copy(source_path, target_path);
+        match file_copy {
+            Ok(_) => {
+                self.status_text = "Pasted from clipboard".to_string();
+                self.clipboard = None;
+            }
             Err(e) => self.status_text = format!("Unable to paste: {e:?}"),
         }
+
+        if self.app_state == AppState::Moving {
+            let file_move = fs::remove_file(self.clipboard.clone().unwrap());
+            match file_move {
+                Ok(_) => {}
+                Err(e) => {
+                    self.status_text =
+                        format!("Unable to remove old file or old file no longer exists: {e:?}")
+                }
+            }
+        }
+        self.app_state = AppState::Running;
         self.refresh_dirlist();
     }
 
@@ -237,13 +263,13 @@ mod tests {
     }
 
     #[test]
-    fn test_open_another_dir() {}
+    fn test_keypress_space_dir() {}
 
     #[test]
-    fn test_open_file() {}
+    fn test_keypress_space_file() {}
 
     #[test]
-    fn test_delete_file() {
+    fn test_keypress_del() {
         let test_file_name = "test_file.txt";
         File::create_new(test_file_name).unwrap();
 
@@ -257,7 +283,7 @@ mod tests {
         }
 
         test_app.app.dir_items.state.select(Some(target_idx));
-        test_app.app.delete_selected();
+        test_app.app.handle_keypress(KeyCode::Delete.into());
 
         assert!(File::open(test_file_name).is_err());
     }
@@ -285,6 +311,7 @@ mod tests {
 
         assert_eq!(result.unwrap(), expected);
 
+
         match trash::delete(expected) {
             Ok(_) => println!("Deleted copy_test.txt"),
             Err(_) => println!("Unable to delete copy_text.txt"),
@@ -307,31 +334,48 @@ mod tests {
         test_app.app.dir_items.state.select(Some(target_idx));
         test_app.app.copy_selected();
 
+        let test_dir = "test_temp";
+        fs::create_dir(test_dir).expect("Unable to create temp directory for unit testing");
+
+        let mut test_path = PathBuf::new();
+        test_path.push(env::current_dir().unwrap());
+        test_path.push(test_dir);
+
         test_app.app.paste_item();
     }
 
     #[test]
-    fn test_moving_cursor_up() {
+    fn test_keypress_up() {
         let mut test_app = setup();
-        test_app.app.move_cursor_up();
+        test_app.app.handle_keypress(KeyCode::Up.into());
         let result = test_app.app.dir_items.state.selected();
 
         assert_ne!(result, None);
     }
 
     #[test]
-    fn test_moving_cursor_down() {
+    fn test_keypress_down() {
         let mut test_app = setup();
-        test_app.app.move_cursor_down();
+        test_app.app.handle_keypress(KeyCode::Down.into());
         let result = test_app.app.dir_items.state.selected();
 
         assert_ne!(result, None);
     }
 
     #[test]
-    fn test_nav_parent_dir() {
+    fn test_keypress_esc() {
         let mut test_app = setup();
-        test_app.app.nav_up_dir();
+        test_app.app.handle_keypress(KeyCode::Esc.into());
+        let result = &test_app.app.current_dir;
+        let expected = fs::canonicalize("../").unwrap();
+
+        assert_eq!(result, &expected);
+    }
+
+    #[test]
+    fn test_keypress_backspace() {
+        let mut test_app = setup();
+        test_app.app.handle_keypress(KeyCode::Backspace.into());
         let result = &test_app.app.current_dir;
         let expected = fs::canonicalize("../").unwrap();
 

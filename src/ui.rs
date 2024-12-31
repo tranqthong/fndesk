@@ -7,10 +7,10 @@ use ratatui::{
     Frame,
 };
 
-use crate::{app::App, colors::SELECTED_ENTRY_STYLE};
 use crate::{
+    app::App,
     app::AppState,
-    colors::{self, OVERWRITE_STYLE, POPUP_BLOCK_STYLE},
+    ui_styles::{self, OVERWRITE_STYLE, POPUP_BLOCK_STYLE, ROUNDED_BLOCK, SELECTED_ENTRY_STYLE},
 };
 
 pub fn draw(frame: &mut Frame, app: &mut App) {
@@ -46,7 +46,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     let current_dir_path = app.current_dir.clone().into_os_string().into_string();
     let title = Paragraph::new(Text::styled(
         current_dir_path.unwrap(),
-        colors::SELECTED_DIR_STYLE,
+        ui_styles::SELECTED_DIR_STYLE,
     ))
     .block(title_block);
 
@@ -57,12 +57,14 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         .map(|x| ListItem::new(x.file_name().into_string().unwrap()))
         .collect();
 
-    let dir_items_list = List::new(item_list).highlight_style(SELECTED_ENTRY_STYLE);
+    let dir_items_list = List::new(item_list)
+        .highlight_style(SELECTED_ENTRY_STYLE)
+        .block(ROUNDED_BLOCK);
 
     let status_contents = Paragraph::new(app.status_text.clone());
-    let status_bar = Paragraph::left_aligned(status_contents);
+    let status_bar = Paragraph::left_aligned(status_contents).block(ROUNDED_BLOCK);
 
-    if app.app_state == AppState::AwaitingResponse {
+    if app.app_state == AppState::Copying || app.app_state == AppState::Moving {
         let popup_block = Block::default()
             .title("Y/n")
             .borders(Borders::NONE)
@@ -74,6 +76,8 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
             .wrap(Wrap { trim: false });
 
         let popup_area = popup_area(frame.area(), 60, 60);
+
+        frame.render_widget(popup_paragraph, popup_area);
     }
 
     frame.render_widget(title, rect_sections[0]);
