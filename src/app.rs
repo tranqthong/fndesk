@@ -65,6 +65,7 @@ impl App {
         match key.code {
             KeyCode::Char('q') => self.quit_app(),
             KeyCode::Char('h') => self.toggle_hidden(),
+            KeyCode::Char('c') => self.copy_selected(),
             KeyCode::Enter | KeyCode::Char(' ') => self.open_selected(),
             KeyCode::Up => self.move_cursor_up(),
             KeyCode::Down => self.move_cursor_down(),
@@ -274,35 +275,36 @@ mod tests {
         File::create_new(test_file_name).unwrap();
 
         let mut test_app = setup();
-        let mut target_idx = 0;
-        for (entry_idx, dir_entry) in test_app.app.dir_items.items.iter().enumerate() {
-            if dir_entry.file_name() == test_file_name {
-                target_idx = entry_idx;
+        loop {
+            test_app.app.handle_keypress(KeyCode::Down.into());
+            let selected_idx = test_app.app.dir_items.state.selected().unwrap();
+            let selected_entry = &test_app.app.dir_items.items[selected_idx];
+            if selected_entry.file_name() == test_file_name {
                 break;
             }
         }
-
-        test_app.app.dir_items.state.select(Some(target_idx));
         test_app.app.handle_keypress(KeyCode::Delete.into());
 
         assert!(File::open(test_file_name).is_err());
     }
 
     #[test]
-    fn test_file_copy() {
+    fn test_keypress_copy() {
         let test_file_name = "copy_test.txt";
         File::create_new(test_file_name).unwrap();
 
         let mut test_app = setup();
-        let mut target_idx = 0;
-        for (entry_idx, dir_entry) in test_app.app.dir_items.items.iter().enumerate() {
-            if dir_entry.file_name() == test_file_name {
-                target_idx = entry_idx;
+
+        loop {
+            test_app.app.handle_keypress(KeyCode::Down.into());
+            let selected_idx = test_app.app.dir_items.state.selected().unwrap();
+            let selected_entry = &test_app.app.dir_items.items[selected_idx];
+            if selected_entry.file_name() == test_file_name {
                 break;
             }
         }
-        test_app.app.dir_items.state.select(Some(target_idx));
-        test_app.app.copy_selected();
+
+        test_app.app.handle_keypress(KeyCode::Char('c').into());
 
         let result = test_app.app.clipboard.clone();
         let mut expected = PathBuf::new();
@@ -311,28 +313,29 @@ mod tests {
 
         assert_eq!(result.unwrap(), expected);
 
-
-        match trash::delete(expected) {
+        match fs::remove_file(expected) {
             Ok(_) => println!("Deleted copy_test.txt"),
-            Err(_) => println!("Unable to delete copy_text.txt"),
+            Err(e) => println!("{e:?}"),
         };
     }
 
     #[test]
-    fn test_paste_file() {
+    fn test_keypress_paste() {
         let test_file_name = "paste_file.txt";
         File::create_new(test_file_name).unwrap();
 
         let mut test_app = setup();
-        let mut target_idx = 0;
-        for (entry_idx, dir_entry) in test_app.app.dir_items.items.iter().enumerate() {
-            if dir_entry.file_name() == test_file_name {
-                target_idx = entry_idx;
+        loop {
+            test_app.app.handle_keypress(KeyCode::Down.into());
+            let selected_idx = test_app.app.dir_items.state.selected().unwrap();
+            let selected_entry = &test_app.app.dir_items.items[selected_idx];
+            if selected_entry.file_name() == test_file_name {
                 break;
             }
         }
-        test_app.app.dir_items.state.select(Some(target_idx));
-        test_app.app.copy_selected();
+
+        test_app.app.handle_keypress(KeyCode::Char('c').into());
+
 
         let test_dir = "test_temp";
         fs::create_dir(test_dir).expect("Unable to create temp directory for unit testing");
