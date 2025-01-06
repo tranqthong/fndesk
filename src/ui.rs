@@ -36,9 +36,9 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     let rect_sections = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(2),
+            Constraint::Length(1),
             Constraint::Min(1),
-            Constraint::Length(2),
+            Constraint::Length(1),
         ])
         .split(frame.area());
 
@@ -62,7 +62,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         .block(ROUNDED_BLOCK);
 
     let status_contents = Paragraph::new(app.status_text.clone());
-    let status_bar = Paragraph::left_aligned(status_contents).block(ROUNDED_BLOCK);
+    let status_bar = Paragraph::left_aligned(status_contents);
 
     if app.app_state == AppState::Copying || app.app_state == AppState::Moving {
         let popup_block = Block::default()

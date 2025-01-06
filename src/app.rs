@@ -336,7 +336,6 @@ mod tests {
 
         test_app.app.handle_keypress(KeyCode::Char('c').into());
 
-
         let test_dir = "test_temp";
         fs::create_dir(test_dir).expect("Unable to create temp directory for unit testing");
 
