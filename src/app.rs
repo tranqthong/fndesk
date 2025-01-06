@@ -134,41 +134,54 @@ impl App {
         };
     }
 
+    fn move_selected(&mut self) {
+        match self.dir_items.state.selected() {
+            Some(idx) => {
+                self.clipboard = Some(self.dir_items.items[idx].path());
+                self.app_state = AppState::Moving;
+                self.status_text = format!("Cut {:?}", &self.dir_items.items[idx])
+            }
+            None => self.status_text = "No file/directory selected!".to_string(),
+        }
+    }
+
     fn paste_item(&mut self) {
         // paste the file/dir
-        let source_path = self.clipboard.clone().unwrap();
-        let file_name = source_path.file_name();
+        if self.clipboard.is_some() {
+            let source_path = self.clipboard.clone().unwrap();
+            let file_name = source_path.file_name();
 
-        let mut target_path = PathBuf::new();
-        target_path.push(&self.current_dir);
-        target_path.push(file_name.unwrap());
+            let mut target_path = PathBuf::new();
+            target_path.push(&self.current_dir);
+            target_path.push(file_name.unwrap());
 
-        if target_path.exists() {
-            // TODO ask if user wants to overwrite
-            self.status_text = "Overwrite file Y/n?".to_string();
-        }
-
-        let file_copy = fs::copy(source_path, target_path);
-        match file_copy {
-            Ok(_) => {
-                self.status_text = "Pasted from clipboard".to_string();
-                self.clipboard = None;
+            if target_path.exists() {
+                // TODO ask if user wants to overwrite
+                self.status_text = "Overwrite file Y/n?".to_string();
             }
-            Err(e) => self.status_text = format!("Unable to paste: {e:?}"),
-        }
 
-        if self.app_state == AppState::Moving {
-            let file_move = fs::remove_file(self.clipboard.clone().unwrap());
-            match file_move {
-                Ok(_) => {}
-                Err(e) => {
-                    self.status_text =
-                        format!("Unable to remove old file or old file no longer exists: {e:?}")
+            let file_copy = fs::copy(source_path, target_path);
+            match file_copy {
+                Ok(_) => {
+                    self.status_text = "Pasted from clipboard".to_string();
+                    self.clipboard = None;
+                }
+                Err(e) => self.status_text = format!("Unable to paste: {e:?}"),
+            }
+
+            if self.app_state == AppState::Moving {
+                let file_move = fs::remove_file(self.clipboard.clone().unwrap());
+                match file_move {
+                    Ok(_) => {}
+                    Err(e) => {
+                        self.status_text =
+                            format!("Unable to remove old file or old file no longer exists: {e:?}")
+                    }
                 }
             }
+            self.app_state = AppState::Running;
+            self.refresh_dirlist();
         }
-        self.app_state = AppState::Running;
-        self.refresh_dirlist();
     }
 
     fn delete_selected(&mut self) {
