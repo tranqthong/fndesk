@@ -131,7 +131,7 @@ impl App {
                 self.status_text = format!("Copying {:?}", &self.dir_items.items[idx])
             }
             None => self.status_text = "No file/directory selected!".to_string(),
-        };
+        }
     }
 
     fn move_selected(&mut self) {
@@ -248,6 +248,9 @@ mod tests {
         app: App,
     }
 
+    // TODO
+    // move the test file creation and removal out of the individual unit tests and
+    // into the setup and teardown constructs
     impl Drop for TestContext {
         fn drop(&mut self) {
             println!("Test teardown...");
