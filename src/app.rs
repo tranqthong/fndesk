@@ -66,13 +66,11 @@ impl App {
             KeyCode::Char('q') => self.quit_app(),
             KeyCode::Char('h') => self.toggle_hidden(),
             KeyCode::Char('c') => self.copy_selected(),
-            KeyCode::Enter | KeyCode::Char(' ') => self.open_selected(),
             KeyCode::Up => self.move_cursor_up(),
             KeyCode::Down => self.move_cursor_down(),
-            KeyCode::Left => self.move_cursor_left(),
-            KeyCode::Right => self.move_cursor_right(),
             KeyCode::Tab | KeyCode::BackTab => self.switch_panes(),
-            KeyCode::Esc | KeyCode::Backspace => self.nav_up_dir(),
+            KeyCode::Enter | KeyCode::Char(' ') | KeyCode::Right => self.open_selected(),
+            KeyCode::Esc | KeyCode::Backspace | KeyCode::Left => self.nav_up_dir(),
             KeyCode::Delete => self.delete_selected(),
             _ => {}
         }
@@ -103,14 +101,6 @@ impl App {
             .set_items(get_dir_items(&self.current_dir, &self.show_hidden));
     }
 
-    fn move_cursor_left(&mut self) {
-        // TODO implement when two column pane is implemented
-    }
-
-    fn move_cursor_right(&mut self) {
-        // TODO implement when two column pane is implemented
-    }
-
     fn move_cursor_up(&mut self) {
         self.dir_items.state.select_previous();
     }
@@ -127,8 +117,7 @@ impl App {
         match self.dir_items.state.selected() {
             Some(idx) => {
                 self.clipboard = Some(self.dir_items.items[idx].path());
-                self.app_state = AppState::Copying;
-                self.status_text = format!("Copying {:?}", &self.dir_items.items[idx])
+                self.status_text = format!("Added {:?} to clipboard", &self.dir_items.items[idx])
             }
             None => self.status_text = "No file/directory selected!".to_string(),
         }
@@ -139,7 +128,7 @@ impl App {
             Some(idx) => {
                 self.clipboard = Some(self.dir_items.items[idx].path());
                 self.app_state = AppState::Moving;
-                self.status_text = format!("Cut {:?}", &self.dir_items.items[idx])
+                self.status_text = format!("Moved {:?}", &self.dir_items.items[idx])
             }
             None => self.status_text = "No file/directory selected!".to_string(),
         }
@@ -159,7 +148,7 @@ impl App {
                 // TODO ask if user wants to overwrite
                 self.status_text = "Overwrite file Y/n?".to_string();
             }
-
+        
             let file_copy = fs::copy(source_path, target_path);
             match file_copy {
                 Ok(_) => {
