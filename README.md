@@ -27,8 +27,8 @@ See [Cargo.toml](Cargo.toml)
 #### Navigation
 - Move up: `arrow_up`
 - Move down: `arrow_down`
-- Move to parent directory: `backspace` or `Esc`
-- Open file or directory: `space` or `enter`
+- Move to parent directory: `backspace` or `Esc` or `arrow_left`
+- Open file or directory: `space` or `enter` or `arrow_right`
 - Quit App: 'q'
 
 #### File Operations
