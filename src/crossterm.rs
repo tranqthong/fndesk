@@ -12,8 +12,8 @@ use crate::{ui, utils};
 
 pub fn run(tick_rate: Duration) -> Result<(), Box<dyn Error>> {
     let mut terminal = ratatui::init();
-    let init_dir = utils::get_init_dirpath();
     // should always be able grab the current directory from which the program is started
+    let init_dir = utils::get_init_dirpath();
     let app = App::new(init_dir);
     let app_result = run_app(&mut terminal, app, tick_rate);
 
@@ -31,8 +31,7 @@ fn run_app<B: Backend>(
     tick_rate: Duration,
 ) -> io::Result<()> {
     let mut last_tick = Instant::now();
-    // need to find a better way to detect file system changes besides
-    // constant refreshing
+    // need to find a better way to detect file system changes
     app.refresh_dirlist();
     while app.app_state != AppState::Exit {
         terminal.draw(|f| {

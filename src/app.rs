@@ -66,12 +66,12 @@ impl App {
             KeyCode::Char('q') => self.quit_app(),
             KeyCode::Char('h') => self.toggle_hidden(),
             KeyCode::Char('c') => self.copy_selected(),
+            KeyCode::Delete => self.delete_selected(),
             KeyCode::Up => self.move_cursor_up(),
             KeyCode::Down => self.move_cursor_down(),
             KeyCode::Tab | KeyCode::BackTab => self.switch_panes(),
             KeyCode::Enter | KeyCode::Char(' ') | KeyCode::Right => self.open_selected(),
             KeyCode::Esc | KeyCode::Backspace | KeyCode::Left => self.nav_up_dir(),
-            KeyCode::Delete => self.delete_selected(),
             _ => {}
         }
     }
@@ -148,7 +148,7 @@ impl App {
                 // TODO ask if user wants to overwrite
                 self.status_text = "Overwrite file Y/n?".to_string();
             }
-        
+
             let file_copy = fs::copy(source_path, target_path);
             match file_copy {
                 Ok(_) => {
