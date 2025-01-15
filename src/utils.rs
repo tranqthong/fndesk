@@ -52,8 +52,8 @@ mod tests {
         let result = get_dir_items(&init_dir, &false);
 
         // there should only be five items found in the project root folder:
-        // src/, target/, Cargo.lock, Cargo.toml, README.md
-        assert_eq!(5, result.len());
+        // src/, target/, Cargo.lock, Cargo.toml, README.md, LICENSE
+        assert_eq!(6, result.len());
     }
 
     #[test]

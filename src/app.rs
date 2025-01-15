@@ -65,8 +65,10 @@ impl App {
         match key.code {
             KeyCode::Char('q') => self.quit_app(),
             KeyCode::Char('h') => self.toggle_hidden(),
-            KeyCode::Char('c') => self.copy_selected(),
-            KeyCode::Delete => self.delete_selected(),
+            KeyCode::Char('c') => self.add_selected_clipboard(),
+            KeyCode::Char('p') => self.copy_from_clipboard(),
+            KeyCode::Char('x') => self.move_from_clipboard(),
+            KeyCode::Delete => self.trash_selected(),
             KeyCode::Up => self.move_cursor_up(),
             KeyCode::Down => self.move_cursor_down(),
             KeyCode::Tab | KeyCode::BackTab => self.switch_panes(),
@@ -113,9 +115,23 @@ impl App {
         // TODO implement when two column pane is implemented
     }
 
-    fn copy_selected(&mut self) {
+    fn delete_item(&mut self, target_item: &PathBuf) {
+        if target_item.is_file() {
+            let item_delete = fs::remove_file(target_item);
+            match item_delete {
+                Ok(_) => todo!(),
+                Err(_) => todo!(),
+            }
+        } else if target_item.is_dir() {
+            // let item_delete = fs::remove_dir_all(target_item);
+        }
+    }
+
+    fn add_selected_clipboard(&mut self) {
         match self.dir_items.state.selected() {
             Some(idx) => {
+                // we replace whatever is currently in the clipboard
+                // considering maybe making it a stack
                 self.clipboard = Some(self.dir_items.items[idx].path());
                 self.status_text = format!("Added {:?} to clipboard", &self.dir_items.items[idx])
             }
@@ -123,30 +139,48 @@ impl App {
         }
     }
 
-    fn move_selected(&mut self) {
-        match self.dir_items.state.selected() {
-            Some(idx) => {
-                self.clipboard = Some(self.dir_items.items[idx].path());
-                self.app_state = AppState::Moving;
-                self.status_text = format!("Moved {:?}", &self.dir_items.items[idx])
-            }
-            None => self.status_text = "No file/directory selected!".to_string(),
-        }
-    }
-
-    fn paste_item(&mut self) {
-        // paste the file/dir
+    fn move_from_clipboard(&mut self) {
         if self.clipboard.is_some() {
-            let source_path = self.clipboard.clone().unwrap();
-            let file_name = source_path.file_name();
+            let source_path = self.clipboard.as_ref().unwrap();
+            let src_filename = source_path.file_name().unwrap();
 
             let mut target_path = PathBuf::new();
             target_path.push(&self.current_dir);
-            target_path.push(file_name.unwrap());
+            target_path.push(src_filename);
 
             if target_path.exists() {
-                // TODO ask if user wants to overwrite
-                self.status_text = "Overwrite file Y/n?".to_string();
+                // append _ to the file name
+                let mut appended_filename = src_filename.to_owned().into_string().unwrap();
+                appended_filename.push('_');
+                target_path.set_file_name(&appended_filename);
+            }
+
+            let file_move = fs::copy(source_path, target_path);
+            match file_move {
+                Ok(_) => {
+                    self.status_text = "Pasted from clipboard".to_string();
+                    self.clipboard = None;
+                }
+                Err(e) => self.status_text = format!("Unable to paste: {e:?}"),
+            }
+        }
+        self.refresh_dirlist();
+    }
+
+    fn copy_from_clipboard(&mut self) {
+        // paste the file/dir
+        if self.clipboard.is_some() {
+            let source_path = self.clipboard.as_ref().unwrap();
+            let src_filename = source_path.file_name().unwrap();
+
+            let mut target_path = PathBuf::new();
+            target_path.push(&self.current_dir);
+            target_path.push(src_filename);
+
+            if target_path.exists() {
+                let mut appended_filename = src_filename.to_owned().into_string().unwrap();
+                appended_filename.push('_');
+                target_path.set_file_name(&appended_filename);
             }
 
             let file_copy = fs::copy(source_path, target_path);
@@ -157,23 +191,11 @@ impl App {
                 }
                 Err(e) => self.status_text = format!("Unable to paste: {e:?}"),
             }
-
-            if self.app_state == AppState::Moving {
-                let file_move = fs::remove_file(self.clipboard.clone().unwrap());
-                match file_move {
-                    Ok(_) => {}
-                    Err(e) => {
-                        self.status_text =
-                            format!("Unable to remove old file or old file no longer exists: {e:?}")
-                    }
-                }
-            }
-            self.app_state = AppState::Running;
-            self.refresh_dirlist();
         }
+        self.refresh_dirlist();
     }
 
-    fn delete_selected(&mut self) {
+    fn trash_selected(&mut self) {
         match self.dir_items.state.selected() {
             Some(idx) => {
                 let selected_entry = &self.dir_items.items[idx];
@@ -348,7 +370,7 @@ mod tests {
         test_path.push(env::current_dir().unwrap());
         test_path.push(test_dir);
 
-        test_app.app.paste_item();
+        test_app.app.copy_from_clipboard();
     }
 
     #[test]
