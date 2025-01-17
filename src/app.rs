@@ -6,6 +6,7 @@ use std::{
 };
 
 use crossterm::event::{KeyCode, KeyEvent};
+use log::debug;
 use ratatui::widgets::ListState;
 
 use crate::utils::{get_dir_items, get_parent_dir};
@@ -117,13 +118,18 @@ impl App {
 
     fn delete_item(&mut self, target_item: &PathBuf) {
         if target_item.is_file() {
-            let item_delete = fs::remove_file(target_item);
-            match item_delete {
-                Ok(_) => todo!(),
-                Err(_) => todo!(),
+            let file_delete = fs::remove_file(target_item);
+            match file_delete {
+                Ok(_) => {}
+                Err(_) => self.status_text = "Unable to delete file, check permissions".to_string(),
             }
         } else if target_item.is_dir() {
-            // let item_delete = fs::remove_dir_all(target_item);
+            // this will delete the dir and all of its contents
+            let dir_delete = fs::remove_dir_all(target_item);
+            match dir_delete {
+                Ok(_) => {}
+                Err(_) => self.status_text = "Unable to delete dir, check permissions".to_string(),
+            }
         }
     }
 
@@ -156,9 +162,11 @@ impl App {
             }
 
             let file_move = fs::copy(source_path, target_path);
+
             match file_move {
                 Ok(_) => {
                     self.status_text = "Pasted from clipboard".to_string();
+                    // self.delete_item(source_path.as_ref());
                     self.clipboard = None;
                 }
                 Err(e) => self.status_text = format!("Unable to paste: {e:?}"),
@@ -168,7 +176,6 @@ impl App {
     }
 
     fn copy_from_clipboard(&mut self) {
-        // paste the file/dir
         if self.clipboard.is_some() {
             let source_path = self.clipboard.as_ref().unwrap();
             let src_filename = source_path.file_name().unwrap();
@@ -178,21 +185,63 @@ impl App {
             target_path.push(src_filename);
 
             if target_path.exists() {
+                // until I figure out a way to gracefully as if user wants to overwrite
+                // I'll just append _ to the end if there is already an identical file
                 let mut appended_filename = src_filename.to_owned().into_string().unwrap();
                 appended_filename.push('_');
                 target_path.set_file_name(&appended_filename);
             }
 
-            let file_copy = fs::copy(source_path, target_path);
-            match file_copy {
-                Ok(_) => {
-                    self.status_text = "Pasted from clipboard".to_string();
-                    self.clipboard = None;
+            if source_path.is_file() {
+                let file_copy = fs::copy(source_path, target_path);
+                match file_copy {
+                    Ok(_) => {
+                        self.status_text = "Pasted from clipboard".to_string();
+                        self.clipboard = None;
+                    }
+                    Err(e) => self.status_text = format!("Unable to paste: {e:?}"),
                 }
-                Err(e) => self.status_text = format!("Unable to paste: {e:?}"),
+            } else if source_path.is_dir() {
+                let dir_create = fs::create_dir(&target_path);
+                match dir_create {
+                    Ok(_) => self.copy_dir_contents(&source_path, &target_path),
+                    Err(e) => debug!("Unable to copy directory: {e:?}"),
+                }
+            } else {
+                debug!("You shouldn't be here, but if you are then we have neither file or dir");
             }
         }
         self.refresh_dirlist();
+    }
+
+    fn copy_dir_contents(&mut self, source_dir: &PathBuf, target_dir: &PathBuf) {
+        let source_entries = fs::read_dir(source_dir).unwrap();
+
+        for entry in source_entries {
+            match entry {
+                Ok(entry) => {
+                    if entry.metadata().unwrap().is_file() {
+                        let mut entry_target = PathBuf::new();
+                        entry_target.push(target_dir);
+                        entry_target.push(entry.file_name());
+                        let entry_copy = fs::copy(entry.path(), entry_target);
+                        match entry_copy {
+                            Ok(_) => debug!("Copy successful."),
+                            Err(e) => debug!("Copy Failed: {e:?}"),
+                        }
+                    } else if entry.metadata().unwrap().is_dir() {
+                        // TODO
+                        // can I handle this without recursion and keep it simple?
+                    } else {
+                        debug!(
+                            "Entry is neither file or directory. {:?}",
+                            entry.file_name()
+                        );
+                    }
+                }
+                Err(e) => debug!("Entry error: {:?}", e),
+            }
+        }
     }
 
     fn trash_selected(&mut self) {
