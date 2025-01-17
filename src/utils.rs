@@ -4,6 +4,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use log::debug;
+
 pub fn get_parent_dir(selected_dir: &Path) -> PathBuf {
     selected_dir.parent().unwrap_or(selected_dir).to_path_buf()
 }
@@ -23,6 +25,36 @@ pub fn get_dir_items(selected_dir: &PathBuf, show_hidden: &bool) -> Vec<DirEntry
 
 pub fn get_init_dirpath() -> PathBuf {
     env::current_dir().expect("Current Directory does not exists or invalid permissions")
+}
+
+pub fn copy_dir_contents(source_dir: &PathBuf, target_dir: &PathBuf) {
+    let source_entries = fs::read_dir(source_dir).unwrap();
+
+    for entry in source_entries {
+        match entry {
+            Ok(entry) => {
+                if entry.metadata().unwrap().is_file() {
+                    let mut entry_target = PathBuf::new();
+                    entry_target.push(target_dir);
+                    entry_target.push(entry.file_name());
+                    let entry_copy = fs::copy(entry.path(), entry_target);
+                    match entry_copy {
+                        Ok(_) => debug!("Copy successful."),
+                        Err(e) => debug!("Copy Failed: {e:?}"),
+                    }
+                } else if entry.metadata().unwrap().is_dir() {
+                    // TODO
+                    // can I handle this without recursion and keep it simple?
+                } else {
+                    debug!(
+                        "Entry is neither file or directory. {:?}",
+                        entry.file_name()
+                    );
+                }
+            }
+            Err(e) => debug!("Entry error: {:?}", e),
+        }
+    }
 }
 
 #[cfg(test)]

@@ -9,7 +9,7 @@ use crossterm::event::{KeyCode, KeyEvent};
 use log::debug;
 use ratatui::widgets::ListState;
 
-use crate::utils::{get_dir_items, get_parent_dir};
+use crate::utils;
 
 #[derive(Debug, PartialEq)]
 pub enum AppState {
@@ -54,8 +54,8 @@ impl App {
         App {
             app_state: AppState::Running,
             current_dir: init_dir_ref.to_path_buf(),
-            parent_dir: get_parent_dir(&Rc::clone(&init_dir_ref)),
-            dir_items: DirListState::new(get_dir_items(&Rc::clone(&init_dir_ref), &false)),
+            parent_dir: utils::get_parent_dir(&Rc::clone(&init_dir_ref)),
+            dir_items: DirListState::new(utils::get_dir_items(&Rc::clone(&init_dir_ref), &false)),
             show_hidden: false,
             status_text: String::from("Status Text Placeholder"),
             clipboard: None,
@@ -81,7 +81,7 @@ impl App {
 
     pub fn refresh_dirlist(&mut self) {
         self.dir_items
-            .set_items(get_dir_items(&self.current_dir, &self.show_hidden));
+            .set_items(utils::get_dir_items(&self.current_dir, &self.show_hidden));
         self.auto_select_first();
     }
 
@@ -101,7 +101,7 @@ impl App {
     fn toggle_hidden(&mut self) {
         self.show_hidden = !self.show_hidden;
         self.dir_items
-            .set_items(get_dir_items(&self.current_dir, &self.show_hidden));
+            .set_items(utils::get_dir_items(&self.current_dir, &self.show_hidden));
     }
 
     fn move_cursor_up(&mut self) {
@@ -204,7 +204,7 @@ impl App {
             } else if source_path.is_dir() {
                 let dir_create = fs::create_dir(&target_path);
                 match dir_create {
-                    Ok(_) => self.copy_dir_contents(&source_path, &target_path),
+                    Ok(_) => utils::copy_dir_contents(&source_path, &target_path),
                     Err(e) => debug!("Unable to copy directory: {e:?}"),
                 }
             } else {
@@ -214,35 +214,7 @@ impl App {
         self.refresh_dirlist();
     }
 
-    fn copy_dir_contents(&mut self, source_dir: &PathBuf, target_dir: &PathBuf) {
-        let source_entries = fs::read_dir(source_dir).unwrap();
 
-        for entry in source_entries {
-            match entry {
-                Ok(entry) => {
-                    if entry.metadata().unwrap().is_file() {
-                        let mut entry_target = PathBuf::new();
-                        entry_target.push(target_dir);
-                        entry_target.push(entry.file_name());
-                        let entry_copy = fs::copy(entry.path(), entry_target);
-                        match entry_copy {
-                            Ok(_) => debug!("Copy successful."),
-                            Err(e) => debug!("Copy Failed: {e:?}"),
-                        }
-                    } else if entry.metadata().unwrap().is_dir() {
-                        // TODO
-                        // can I handle this without recursion and keep it simple?
-                    } else {
-                        debug!(
-                            "Entry is neither file or directory. {:?}",
-                            entry.file_name()
-                        );
-                    }
-                }
-                Err(e) => debug!("Entry error: {:?}", e),
-            }
-        }
-    }
 
     fn trash_selected(&mut self) {
         match self.dir_items.state.selected() {
@@ -264,7 +236,7 @@ impl App {
 
     fn nav_up_dir(&mut self) {
         let new_current_dirpath = self.parent_dir.clone();
-        let new_parent_dirpath = get_parent_dir(&new_current_dirpath);
+        let new_parent_dirpath = utils::get_parent_dir(&new_current_dirpath);
 
         // we only want to be able to navigate up to a parent if we're not already in the root directory
         if new_parent_dirpath != self.current_dir {
