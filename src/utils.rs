@@ -6,11 +6,15 @@ use std::{
 
 use log::debug;
 
-pub fn get_parent_dir(selected_dir: &Path) -> PathBuf {
-    selected_dir.parent().unwrap_or(selected_dir).to_path_buf()
+pub fn get_parent_dir<T: AsRef<Path>>(selected_dir: T) -> PathBuf {
+    selected_dir
+        .as_ref()
+        .parent()
+        .unwrap_or(selected_dir.as_ref())
+        .to_path_buf()
 }
 
-pub fn get_dir_items(selected_dir: &PathBuf, show_hidden: &bool) -> Vec<DirEntry> {
+pub fn get_dir_items<T: AsRef<Path>>(selected_dir: T, show_hidden: &bool) -> Vec<DirEntry> {
     let mut item_paths: Vec<_> = fs::read_dir(selected_dir)
         .unwrap()
         .map(|x| x.unwrap())
@@ -27,7 +31,7 @@ pub fn get_init_dirpath() -> PathBuf {
     env::current_dir().expect("Current Directory does not exists or invalid permissions")
 }
 
-pub fn copy_dir_contents(source_dir: &PathBuf, target_dir: &PathBuf) {
+pub fn copy_dir_contents<T: AsRef<Path>>(source_dir: T, target_dir: T) {
     let source_entries = fs::read_dir(source_dir).unwrap();
 
     for entry in source_entries {
@@ -35,7 +39,7 @@ pub fn copy_dir_contents(source_dir: &PathBuf, target_dir: &PathBuf) {
             Ok(entry) => {
                 if entry.metadata().unwrap().is_file() {
                     let mut entry_target = PathBuf::new();
-                    entry_target.push(target_dir);
+                    entry_target.push(target_dir.as_ref());
                     entry_target.push(entry.file_name());
                     let entry_copy = fs::copy(entry.path(), entry_target);
                     match entry_copy {
@@ -83,7 +87,7 @@ mod tests {
         let init_dir = get_init_dirpath();
         let result = get_dir_items(&init_dir, &false);
 
-        // there should only be five items found in the project root folder:
+        // there should only be six items found in the project root folder:
         // src/, target/, Cargo.lock, Cargo.toml, README.md, LICENSE
         assert_eq!(6, result.len());
     }
@@ -95,6 +99,6 @@ mod tests {
 
         // like the above, but with 8 counting 3 hidden dir/files:
         // .git/, .gitignore, .vscode/
-        assert_eq!(8, result.len());
+        assert_eq!(9, result.len());
     }
 }

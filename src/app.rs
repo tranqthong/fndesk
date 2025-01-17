@@ -1,8 +1,7 @@
 use std::{
     fs::{self, DirEntry},
-    path::PathBuf,
+    path::{Path, PathBuf},
     process::Command,
-    rc::Rc,
 };
 
 use crossterm::event::{KeyCode, KeyEvent};
@@ -49,13 +48,13 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(init_dir: PathBuf) -> Self {
-        let init_dir_ref = Rc::new(init_dir);
+    pub fn new<T: AsRef<Path>>(init_dir: T) -> Self {
+        // let init_dir_ref = Rc::new(init_dir);
         App {
             app_state: AppState::Running,
-            current_dir: init_dir_ref.to_path_buf(),
-            parent_dir: utils::get_parent_dir(&Rc::clone(&init_dir_ref)),
-            dir_items: DirListState::new(utils::get_dir_items(&Rc::clone(&init_dir_ref), &false)),
+            current_dir: init_dir.as_ref().to_path_buf(),
+            parent_dir: utils::get_parent_dir(&init_dir),
+            dir_items: DirListState::new(utils::get_dir_items(&init_dir, &false)),
             show_hidden: false,
             status_text: String::from("Status Text Placeholder"),
             clipboard: None,
@@ -204,7 +203,7 @@ impl App {
             } else if source_path.is_dir() {
                 let dir_create = fs::create_dir(&target_path);
                 match dir_create {
-                    Ok(_) => utils::copy_dir_contents(&source_path, &target_path),
+                    Ok(_) => utils::copy_dir_contents(&source_path, &&target_path),
                     Err(e) => debug!("Unable to copy directory: {e:?}"),
                 }
             } else {
@@ -213,8 +212,6 @@ impl App {
         }
         self.refresh_dirlist();
     }
-
-
 
     fn trash_selected(&mut self) {
         match self.dir_items.state.selected() {
