@@ -1,21 +1,20 @@
 use log::error;
 use std::error::Error;
 use std::io;
-use std::time::{Duration, Instant};
+use std::path::Path;
 
 use crossterm::event::{self, Event, KeyEventKind};
 use ratatui::prelude::Backend;
 use ratatui::Terminal;
 
 use crate::app::{App, AppState};
-use crate::{ui, utils};
+use crate::ui;
 
-pub fn run(tick_rate: Duration) -> Result<(), Box<dyn Error>> {
+pub fn run<T: AsRef<Path>>(init_dir: T) -> Result<(), Box<dyn Error>> {
     let mut terminal = ratatui::init();
     // should always be able grab the current directory from which the program is started
-    let init_dir = utils::get_init_dirpath();
     let app = App::new(init_dir);
-    let app_result = run_app(&mut terminal, app, tick_rate);
+    let app_result = run_app(&mut terminal, app);
 
     ratatui::restore();
 
@@ -25,12 +24,7 @@ pub fn run(tick_rate: Duration) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn run_app<B: Backend>(
-    terminal: &mut Terminal<B>,
-    mut app: App,
-    tick_rate: Duration,
-) -> io::Result<()> {
-    let mut last_tick = Instant::now();
+fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
     // need to find a better way to detect file system changes
     app.refresh_dirlist();
     while app.app_state != AppState::Exit {
@@ -38,16 +32,10 @@ fn run_app<B: Backend>(
             ui::draw(f, &mut app);
         })?;
 
-        let timeout = tick_rate.saturating_sub(last_tick.elapsed());
-        if event::poll(timeout)? {
-            if let Event::Key(key) = event::read()? {
-                if key.kind == KeyEventKind::Press {
-                    app.handle_keypress(key);
-                }
+        if let Event::Key(key) = event::read()? {
+            if key.kind == KeyEventKind::Press {
+                app.handle_keypress(key);
             }
-        }
-        if last_tick.elapsed() >= tick_rate {
-            last_tick = Instant::now();
         }
     }
     Ok(())

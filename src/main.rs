@@ -1,28 +1,27 @@
-use argh::FromArgs;
-use std::{error::Error, time::Duration};
+use std::{env, error::Error};
 
 mod app;
+mod cli;
 #[cfg(feature = "crossterm")]
 mod crossterm;
 mod ui;
 mod ui_styles;
 mod utils;
 
-#[derive(Debug, FromArgs)]
-///Optional Args
-struct Cli {
-    #[argh(option, description = "time in ms between two ticks", default = "250")]
-    tick_rate: u64,
-}
-
 fn main() -> Result<(), Box<dyn Error>> {
     let env_log = env_logger::Env::default();
     env_logger::init_from_env(env_log);
 
-    let cli: Cli = argh::from_env();
-    let tick_rate = Duration::from_millis(cli.tick_rate);
+    let args: Vec<String> = env::args().collect();
+    if args.contains(&"-v".to_string()) || args.contains(&"--version".to_string()) {
+        println!("{} {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+
+    let init_dir = crate::cli::parse_args(args);
+
     #[cfg(feature = "crossterm")]
-    crate::crossterm::run(tick_rate)?;
+    crate::crossterm::run(init_dir)?;
 
     // TODO add windows/mac support soon, maybe, eventually, whenever
     Ok(())

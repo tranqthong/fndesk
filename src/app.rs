@@ -13,8 +13,6 @@ use crate::utils;
 #[derive(Debug, PartialEq)]
 pub enum AppState {
     Running,
-    Copying,
-    Moving,
     Exit,
 }
 
@@ -272,6 +270,7 @@ mod tests {
         env,
         fs::{self, File},
     };
+    // TODO update unit tests to use tempfile once app is updated to accept dir args
 
     struct TestContext {
         app: App,
@@ -336,6 +335,8 @@ mod tests {
     #[test]
     fn test_keypress_copy() {
         let test_file_name = "copy_test.txt";
+        // let temp_dir = tempdir().unwrap();
+        // let test_file = temp_dir.path().join(test_file_name);
         File::create_new(test_file_name).unwrap();
 
         let mut test_app = setup();
@@ -388,7 +389,7 @@ mod tests {
         test_path.push(env::current_dir().unwrap());
         test_path.push(test_dir);
 
-        test_app.app.copy_from_clipboard();
+        test_app.app.handle_keypress(KeyCode::Char('p').into());
     }
 
     #[test]

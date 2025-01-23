@@ -1,16 +1,14 @@
 use ratatui::{
-    layout::{Constraint, Direction, Flex, Layout},
-    prelude::Rect,
+    layout::{Constraint, Direction, Layout},
     style::Style,
     text::Text,
-    widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
+    widgets::{Block, List, ListItem, Paragraph},
     Frame,
 };
 
 use crate::{
     app::App,
-    app::AppState,
-    ui_styles::{self, OVERWRITE_STYLE, POPUP_BLOCK_STYLE, ROUNDED_BLOCK, SELECTED_ENTRY_STYLE},
+    ui_styles::{ROUNDED_BLOCK, SELECTED_DIR_STYLE, SELECTED_ENTRY_STYLE},
 };
 
 pub fn draw(frame: &mut Frame, app: &mut App) {
@@ -44,11 +42,8 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
 
     let title_block = Block::default().style(Style::default());
     let current_dir_path = app.current_dir.clone().into_os_string().into_string();
-    let title = Paragraph::new(Text::styled(
-        current_dir_path.unwrap(),
-        ui_styles::SELECTED_DIR_STYLE,
-    ))
-    .block(title_block);
+    let title = Paragraph::new(Text::styled(current_dir_path.unwrap(), SELECTED_DIR_STYLE))
+        .block(title_block);
 
     let item_list: Vec<ListItem> = app
         .dir_items
@@ -64,31 +59,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     let status_contents = Paragraph::new(app.status_text.clone());
     let status_bar = Paragraph::left_aligned(status_contents);
 
-    if app.app_state == AppState::Copying || app.app_state == AppState::Moving {
-        let popup_block = Block::default()
-            .title("Y/n")
-            .borders(Borders::NONE)
-            .style(POPUP_BLOCK_STYLE);
-        let popup_text = Text::styled("Overwrite file? (Y/n)", OVERWRITE_STYLE);
-
-        let popup_paragraph = Paragraph::new(popup_text)
-            .block(popup_block)
-            .wrap(Wrap { trim: false });
-
-        let popup_area = popup_area(frame.area(), 60, 60);
-
-        frame.render_widget(popup_paragraph, popup_area);
-    }
-
     frame.render_widget(title, rect_sections[0]);
     frame.render_stateful_widget(dir_items_list, rect_sections[1], &mut app.dir_items.state);
     frame.render_widget(status_bar, rect_sections[2]);
-}
-
-fn popup_area(area: Rect, percent_x: u16, percent_y: u16) -> Rect {
-    let vertical = Layout::vertical([Constraint::Percentage(percent_y)]).flex(Flex::Center);
-    let horizontal = Layout::horizontal([Constraint::Percentage(percent_x)]).flex(Flex::Center);
-    let [area] = vertical.areas(area);
-    let [area] = horizontal.areas(area);
-    area
 }
