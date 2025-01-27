@@ -29,7 +29,7 @@ See [Cargo.toml](Cargo.toml)
 - Move down: `arrow_down`
 - Move to parent directory: `backspace` or `Esc` or `arrow_left`
 - Open file or directory: `space` or `enter` or `arrow_right`
-- Quit App: 'q'
+- Quit App: `q`
 
 #### File Operations
 - Toggle hidden files: `h`
