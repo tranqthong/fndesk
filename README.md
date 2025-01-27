@@ -39,7 +39,7 @@ See [Cargo.toml](Cargo.toml)
 - Move file or directory: WIP
 
 ## Roadmap
-- Implement basic file IO
+- Implement basic file IO: WIP
 - differentiate between file and dir
 - async IO
 - set up github workflow
