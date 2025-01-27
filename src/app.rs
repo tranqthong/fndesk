@@ -113,16 +113,16 @@ impl App {
         // TODO implement when two column pane is implemented
     }
 
-    fn delete_item(&mut self, target_item: &PathBuf) {
-        if target_item.is_file() {
-            let file_delete = fs::remove_file(target_item);
+    fn delete_item(&mut self, selected_item: &PathBuf) {
+        if selected_item.is_file() {
+            let file_delete = fs::remove_file(selected_item);
             match file_delete {
                 Ok(_) => {}
                 Err(_) => self.status_text = "Unable to delete file, check permissions".to_string(),
             }
-        } else if target_item.is_dir() {
+        } else if selected_item.is_dir() {
             // this will delete the dir and all of its contents
-            let dir_delete = fs::remove_dir_all(target_item);
+            let dir_delete = fs::remove_dir_all(selected_item);
             match dir_delete {
                 Ok(_) => {}
                 Err(_) => self.status_text = "Unable to delete dir, check permissions".to_string(),
@@ -147,18 +147,18 @@ impl App {
             let source_path = self.clipboard.as_ref().unwrap();
             let src_filename = source_path.file_name().unwrap();
 
-            let mut target_path = PathBuf::new();
-            target_path.push(&self.current_dir);
-            target_path.push(src_filename);
+            let mut dest_path = PathBuf::new();
+            dest_path.push(&self.current_dir);
+            dest_path.push(src_filename);
 
-            if target_path.exists() {
+            if dest_path.exists() {
                 // append _ to the file name
                 let mut appended_filename = src_filename.to_owned().into_string().unwrap();
                 appended_filename.push('_');
-                target_path.set_file_name(&appended_filename);
+                dest_path.set_file_name(&appended_filename);
             }
 
-            let file_move = fs::copy(source_path, target_path);
+            let file_move = fs::copy(source_path, dest_path);
 
             match file_move {
                 Ok(_) => {
@@ -177,20 +177,20 @@ impl App {
             let source_path = self.clipboard.as_ref().unwrap();
             let src_filename = source_path.file_name().unwrap();
 
-            let mut target_path = PathBuf::new();
-            target_path.push(&self.current_dir);
-            target_path.push(src_filename);
-
-            if target_path.exists() {
-                // until I figure out a way to gracefully as if user wants to overwrite
-                // I'll just append _ to the end if there is already an identical file
-                let mut appended_filename = src_filename.to_owned().into_string().unwrap();
-                appended_filename.push('_');
-                target_path.set_file_name(&appended_filename);
-            }
+            let mut dest_path = PathBuf::new();
+            dest_path.push(&self.current_dir);
+            dest_path.push(src_filename);
 
             if source_path.is_file() {
-                let file_copy = fs::copy(source_path, target_path);
+                if dest_path.exists() {
+                    // until I figure out a way to gracefully ask if user wants to overwrite
+                    // I'll just append _ to the end if there is already an identical file
+                    let mut appended_filename = src_filename.to_owned().into_string().unwrap();
+                    appended_filename.push('_');
+                    dest_path.set_file_name(&appended_filename);
+                }
+
+                let file_copy = fs::copy(source_path, dest_path);
                 match file_copy {
                     Ok(_) => {
                         self.status_text = "Pasted from clipboard".to_string();
@@ -199,9 +199,20 @@ impl App {
                     Err(e) => self.status_text = format!("Unable to paste: {e:?}"),
                 }
             } else if source_path.is_dir() {
-                let dir_create = fs::create_dir(&target_path);
+                // TODO
+                // check if dir exists, then copy in all files
+                // if it doesn't not exist then create the dir and copy the file in
+
+                if dest_path.exists() {
+                    // TODO
+                    // copy in everything
+                } else {
+                    // TODO
+                    // create a directory then copy in everything
+                }
+                let dir_create = fs::create_dir(&dest_path);
                 match dir_create {
-                    Ok(_) => utils::copy_dir_contents(&source_path, &&target_path),
+                    Ok(_) => utils::copy_dir_contents(&source_path, &&dest_path),
                     Err(e) => debug!("Unable to copy directory: {e:?}"),
                 }
             } else {

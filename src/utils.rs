@@ -31,24 +31,26 @@ pub fn get_init_dirpath() -> PathBuf {
     env::current_dir().expect("Current Directory does not exists or invalid permissions")
 }
 
-pub fn copy_dir_contents<T: AsRef<Path>>(source_dir: T, target_dir: T) {
+pub fn copy_dir_contents<T: AsRef<Path>>(source_dir: T, dest_dir: T) {
     let source_entries = fs::read_dir(source_dir).unwrap();
 
     for entry in source_entries {
         match entry {
             Ok(entry) => {
                 if entry.metadata().unwrap().is_file() {
-                    let mut entry_target = PathBuf::new();
-                    entry_target.push(target_dir.as_ref());
-                    entry_target.push(entry.file_name());
-                    let entry_copy = fs::copy(entry.path(), entry_target);
+                    let mut entry_dest_path = PathBuf::new();
+                    entry_dest_path.push(dest_dir.as_ref());
+                    entry_dest_path.push(entry.file_name());
+                    let entry_copy = fs::copy(entry.path(), entry_dest_path);
                     match entry_copy {
                         Ok(_) => debug!("Copy successful."),
                         Err(e) => debug!("Copy Failed: {e:?}"),
                     }
                 } else if entry.metadata().unwrap().is_dir() {
-                    // TODO
-                    // can I handle this without recursion and keep it simple?
+                    let mut dest_subdir = PathBuf::new();
+                    dest_subdir.push(&dest_dir);
+                    dest_subdir.push(&entry.file_name());
+                    copy_dir_contents(entry.path(), dest_subdir);
                 } else {
                     debug!(
                         "Entry is neither file or directory. {:?}",
@@ -64,6 +66,7 @@ pub fn copy_dir_contents<T: AsRef<Path>>(source_dir: T, target_dir: T) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::tempdir;
 
     #[test]
     fn test_get_init_dirpath() {
@@ -87,7 +90,7 @@ mod tests {
         let init_dir = get_init_dirpath();
         let result = get_dir_items(&init_dir, &false);
 
-        // there should only be six items found in the project root folder:
+        // there are currently six items found in the project root folder:
         // src/, target/, Cargo.lock, Cargo.toml, README.md, LICENSE
         assert_eq!(6, result.len());
     }
@@ -100,5 +103,51 @@ mod tests {
         // like the above, but with 8 counting 3 hidden dir/files:
         // .git/, .gitignore, .vscode/
         assert_eq!(9, result.len());
+    }
+
+    #[test]
+    fn test_copy_single_file() {
+        let src_dir = get_init_dirpath();
+        let dest_dir = tempdir().unwrap();
+
+        let mut license_filepath = PathBuf::new();
+        license_filepath.push(&src_dir);
+        license_filepath.push("LICENSE");
+
+        let expected_file_contents = fs::read_to_string(license_filepath).unwrap();
+
+        copy_dir_contents(src_dir.as_path(), dest_dir.path());
+
+        let result_file_contents = fs::read_to_string(dest_dir.path().join("LICENSE")).unwrap();
+
+        dest_dir.close().unwrap();
+
+        assert_eq!(result_file_contents, expected_file_contents);
+    }
+
+    #[test]
+    fn test_copy_subdir_file() {
+        let src_dir = get_init_dirpath();
+        let dest_dir = tempdir().unwrap();
+
+        let mut self_filepath = PathBuf::new();
+        self_filepath.push(&src_dir);
+        self_filepath.push("src");
+        self_filepath.push("utils.rs");
+
+        let expected_file_contents = fs::read_to_string(self_filepath).unwrap();
+
+        copy_dir_contents(src_dir.as_path(), dest_dir.path());
+
+        let mut result_filepath = PathBuf::new();
+        result_filepath.push(&dest_dir);
+        result_filepath.push("src");
+        result_filepath.push("utils.rs");
+
+        let result_file_contents = fs::read_to_string(result_filepath).unwrap();
+
+        dest_dir.close().unwrap();
+
+        assert_eq!(result_file_contents, expected_file_contents);
     }
 }
