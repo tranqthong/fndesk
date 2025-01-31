@@ -113,23 +113,6 @@ impl App {
         // TODO implement when two column pane is implemented
     }
 
-    fn delete_item(&mut self, selected_item: &PathBuf) {
-        if selected_item.is_file() {
-            let file_delete = fs::remove_file(selected_item);
-            match file_delete {
-                Ok(_) => {}
-                Err(_) => self.status_text = "Unable to delete file, check permissions".to_string(),
-            }
-        } else if selected_item.is_dir() {
-            // this will delete the dir and all of its contents
-            let dir_delete = fs::remove_dir_all(selected_item);
-            match dir_delete {
-                Ok(_) => {}
-                Err(_) => self.status_text = "Unable to delete dir, check permissions".to_string(),
-            }
-        }
-    }
-
     fn add_selected_clipboard(&mut self) {
         match self.dir_items.state.selected() {
             Some(idx) => {
@@ -150,23 +133,24 @@ impl App {
             let mut dest_path = PathBuf::new();
             dest_path.push(&self.current_dir);
             dest_path.push(src_filename);
-
-            if dest_path.exists() {
-                // append _ to the file name
-                let mut appended_filename = src_filename.to_owned().into_string().unwrap();
-                appended_filename.push('_');
-                dest_path.set_file_name(&appended_filename);
-            }
-
-            let file_move = fs::copy(source_path, dest_path);
-
-            match file_move {
-                Ok(_) => {
-                    self.status_text = "Pasted from clipboard".to_string();
-                    // self.delete_item(source_path.as_ref());
-                    self.clipboard = None;
+            if source_path.is_file() {
+                if dest_path.exists() {
+                    // append _ to the file name
+                    let mut appended_filename = src_filename.to_owned().into_string().unwrap();
+                    appended_filename.push('_');
+                    dest_path.set_file_name(&appended_filename);
                 }
-                Err(e) => self.status_text = format!("Unable to paste: {e:?}"),
+
+                let file_move = fs::copy(source_path, dest_path);
+
+                match file_move {
+                    Ok(_) => {
+                        self.status_text = "Pasted from clipboard".to_string();
+                        utils::delete_entry(source_path);
+                        self.clipboard = None;
+                    }
+                    Err(e) => self.status_text = format!("Unable to paste: {e:?}"),
+                }
             }
         }
         self.refresh_dirlist();
@@ -199,22 +183,7 @@ impl App {
                     Err(e) => self.status_text = format!("Unable to paste: {e:?}"),
                 }
             } else if source_path.is_dir() {
-                // TODO
-                // check if dir exists, then copy in all files
-                // if it doesn't not exist then create the dir and copy the file in
-
-                if dest_path.exists() {
-                    // TODO
-                    // copy in everything
-                } else {
-                    // TODO
-                    // create a directory then copy in everything
-                }
-                let dir_create = fs::create_dir(&dest_path);
-                match dir_create {
-                    Ok(_) => utils::copy_dir_contents(&source_path, &&dest_path),
-                    Err(e) => debug!("Unable to copy directory: {e:?}"),
-                }
+                utils::copy_dir_contents(source_path, &dest_path);
             } else {
                 debug!("You shouldn't be here, but if you are then we have neither file or dir");
             }

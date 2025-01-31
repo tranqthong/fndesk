@@ -31,6 +31,26 @@ pub fn get_init_dirpath() -> PathBuf {
     env::current_dir().expect("Current Directory does not exists or invalid permissions")
 }
 
+pub fn delete_entry<T: AsRef<Path>>(selected_entry: T) {
+    // let entry_path = selected_entry.into();
+    if selected_entry.as_ref().is_file() {
+        let file_delete = fs::remove_file(selected_entry);
+        match file_delete {
+            Ok(_) => {}
+            Err(e) => debug!("Unable to delete file: {e:?}"),
+        }
+    } else if selected_entry.as_ref().is_dir() {
+        // WARNING, this will delete the directory and all of its contents, including subdirectories
+        let dir_delete = fs::remove_dir_all(selected_entry);
+        match dir_delete {
+            Ok(_) => {}
+            Err(e) => debug!("Unable to delete dir, check permissions: {e:?}"),
+        }
+    } else {
+        debug!("Attempting to delete something that isn't a file or a dir???");
+    }
+}
+
 pub fn copy_dir_contents<T: AsRef<Path>>(source_dir: T, dest_dir: T) {
     let source_entries = fs::read_dir(source_dir).unwrap();
 
@@ -41,6 +61,14 @@ pub fn copy_dir_contents<T: AsRef<Path>>(source_dir: T, dest_dir: T) {
                     let mut entry_dest_path = PathBuf::new();
                     entry_dest_path.push(dest_dir.as_ref());
                     entry_dest_path.push(entry.file_name());
+                    if entry_dest_path.exists() {
+                        // until I figure out a way to gracefully ask if user wants to overwrite
+                        // I'll just append _ to the end if there is already an identical file
+                        let mut appended_dest_filename = entry.file_name().into_string().unwrap();
+                        appended_dest_filename.push('_');
+                        entry_dest_path.set_file_name(&appended_dest_filename);
+                    }
+
                     let entry_copy = fs::copy(entry.path(), entry_dest_path);
                     match entry_copy {
                         Ok(_) => debug!("Copy successful."),
@@ -49,7 +77,17 @@ pub fn copy_dir_contents<T: AsRef<Path>>(source_dir: T, dest_dir: T) {
                 } else if entry.metadata().unwrap().is_dir() {
                     let mut dest_subdir = PathBuf::new();
                     dest_subdir.push(&dest_dir);
-                    dest_subdir.push(&entry.file_name());
+                    dest_subdir.push(entry.file_name());
+                    if !dest_subdir.exists() {
+                        let create_subdir = fs::create_dir(&dest_subdir);
+                        match create_subdir {
+                            Ok(_) => (),
+                            Err(e) => {
+                                debug!("Unable to create directory, skipping... {e:?}");
+                                continue;
+                            }
+                        }
+                    }
                     copy_dir_contents(entry.path(), dest_subdir);
                 } else {
                     debug!(
@@ -65,8 +103,10 @@ pub fn copy_dir_contents<T: AsRef<Path>>(source_dir: T, dest_dir: T) {
 
 #[cfg(test)]
 mod tests {
+    use std::fs::File;
+
     use super::*;
-    use tempfile::tempdir;
+    use tempfile::{tempdir, tempfile};
 
     #[test]
     fn test_get_init_dirpath() {
@@ -103,6 +143,28 @@ mod tests {
         // like the above, but with 8 counting 3 hidden dir/files:
         // .git/, .gitignore, .vscode/
         assert_eq!(9, result.len());
+    }
+
+    #[test]
+    fn test_delete_file() {
+        let test_dir = tempdir().unwrap();
+        let test_filepath = test_dir.path().join("test_file.txt");
+        let _test_file = File::create(&test_filepath).unwrap();
+
+        delete_entry(&test_filepath);
+
+        assert!(!test_filepath.exists());
+        test_dir.close().unwrap();
+    }
+
+    #[test]
+    fn test_delete_dir() {
+        let test_dir = tempdir().unwrap();
+        let test_dirpath = test_dir.path();
+
+        delete_entry(&test_dirpath);
+
+        assert!(!test_dirpath.exists());
     }
 
     #[test]
