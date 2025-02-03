@@ -252,6 +252,7 @@ mod tests {
         env,
         fs::{self, File},
     };
+    use tempfile::tempdir;
     // TODO update unit tests to use tempfile once app is updated to accept dir args
 
     struct TestContext {
@@ -297,21 +298,29 @@ mod tests {
 
     #[test]
     fn test_keypress_del() {
-        let test_file_name = "test_file.txt";
-        File::create_new(test_file_name).unwrap();
+        let test_dir = tempdir().unwrap();
+        let test_dirpath = test_dir.path();
+        let test_filename = "test_file.txt";
+        let test_filepath = test_dir.path().join(test_filename);
+        let _test_file = fs::File::create(&test_filepath).unwrap();
 
         let mut test_app = setup();
+        test_app.app.current_dir = test_dirpath.to_path_buf();
+        test_app.app.parent_dir = test_dirpath.parent().unwrap().to_path_buf();
+        test_app.app.refresh_dirlist();
+
         loop {
-            test_app.app.handle_keypress(KeyCode::Down.into());
             let selected_idx = test_app.app.dir_items.state.selected().unwrap();
             let selected_entry = &test_app.app.dir_items.items[selected_idx];
-            if selected_entry.file_name() == test_file_name {
+            if selected_entry.file_name() == test_filename {
                 break;
             }
+            test_app.app.handle_keypress(KeyCode::Down.into());
         }
         test_app.app.handle_keypress(KeyCode::Delete.into());
 
-        assert!(File::open(test_file_name).is_err());
+        assert!(File::open(test_filename).is_err());
+        test_dir.close().unwrap();
     }
 
     #[test]
