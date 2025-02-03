@@ -151,6 +151,8 @@ impl App {
                     }
                     Err(e) => self.status_text = format!("Unable to paste: {e:?}"),
                 }
+            } else if source_path.is_dir() {
+                utils::copy_dir_contents(source_path, &dest_path);
             }
         }
         self.refresh_dirlist();
@@ -281,9 +283,9 @@ mod tests {
     }
 
     #[test]
-    fn test_app_exit() {
+    fn test_keypress_q() {
         let mut test_app = setup();
-        test_app.app.quit_app();
+        test_app.app.handle_keypress(KeyCode::Char('q').into());
         assert_eq!(test_app.app.app_state, AppState::Exit);
     }
 

@@ -103,10 +103,8 @@ pub fn copy_dir_contents<T: AsRef<Path>>(source_dir: T, dest_dir: T) {
 
 #[cfg(test)]
 mod tests {
-    use std::fs::File;
-
     use super::*;
-    use tempfile::{tempdir, tempfile};
+    use tempfile::tempdir;
 
     #[test]
     fn test_get_init_dirpath() {
@@ -149,7 +147,7 @@ mod tests {
     fn test_delete_file() {
         let test_dir = tempdir().unwrap();
         let test_filepath = test_dir.path().join("test_file.txt");
-        let _test_file = File::create(&test_filepath).unwrap();
+        let _test_file = fs::File::create(&test_filepath).unwrap();
 
         delete_entry(&test_filepath);
 
