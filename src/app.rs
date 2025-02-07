@@ -249,10 +249,7 @@ impl App {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::{
-        env,
-        fs::{self, File},
-    };
+    use std::env;
     use tempfile::tempdir;
 
     struct TestContext {
@@ -319,7 +316,7 @@ mod tests {
         }
         test_app.app.handle_keypress(KeyCode::Delete.into());
 
-        assert!(File::open(test_filename).is_err());
+        assert!(fs::File::open(test_filename).is_err());
         test_dir.close().unwrap();
     }
 
@@ -397,7 +394,7 @@ mod tests {
         }
         test_app.app.handle_keypress(KeyCode::Char('p').into());
 
-        assert!(File::open(dest_filepath).is_ok());
+        assert!(fs::File::open(dest_filepath).is_ok());
         test_dir.close().unwrap();
         dest_dir.close().unwrap();
     }
