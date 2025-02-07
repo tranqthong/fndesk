@@ -47,7 +47,6 @@ pub struct App {
 
 impl App {
     pub fn new<T: AsRef<Path>>(init_dir: T) -> Self {
-        // let init_dir_ref = Rc::new(init_dir);
         App {
             app_state: AppState::Running,
             current_dir: init_dir.as_ref().to_path_buf(),
