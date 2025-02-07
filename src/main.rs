@@ -22,7 +22,5 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     #[cfg(feature = "crossterm")]
     crate::crossterm::run(init_dir)?;
-
-    // TODO add windows/mac support soon, maybe, eventually, whenever
     Ok(())
 }

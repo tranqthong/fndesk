@@ -99,6 +99,7 @@ impl App {
         self.show_hidden = !self.show_hidden;
         self.dir_items
             .set_items(utils::get_dir_items(&self.current_dir, &self.show_hidden));
+        self.auto_select_first();
     }
 
     fn move_cursor_up(&mut self) {
@@ -253,7 +254,6 @@ mod tests {
         fs::{self, File},
     };
     use tempfile::tempdir;
-    // TODO update unit tests to use tempfile once app is updated to accept dir args
 
     struct TestContext {
         app: App,
@@ -325,62 +325,81 @@ mod tests {
 
     #[test]
     fn test_keypress_copy() {
-        let test_file_name = "copy_test.txt";
-        // let temp_dir = tempdir().unwrap();
-        // let test_file = temp_dir.path().join(test_file_name);
-        File::create_new(test_file_name).unwrap();
+        let test_filename = "copy_test.txt";
+        let test_dir = tempdir().unwrap();
+        let test_dirpath = test_dir.path();
+        let test_filepath = test_dir.path().join(test_filename);
+        let _test_file = fs::File::create(&test_filepath).unwrap();
 
         let mut test_app = setup();
+        test_app.app.current_dir = test_dirpath.to_path_buf();
+        test_app.app.parent_dir = test_dirpath.parent().unwrap().to_path_buf();
+        test_app.app.refresh_dirlist();
 
         loop {
-            test_app.app.handle_keypress(KeyCode::Down.into());
             let selected_idx = test_app.app.dir_items.state.selected().unwrap();
             let selected_entry = &test_app.app.dir_items.items[selected_idx];
-            if selected_entry.file_name() == test_file_name {
+            if selected_entry.file_name() == test_filename {
                 break;
             }
+            test_app.app.handle_keypress(KeyCode::Down.into());
         }
 
         test_app.app.handle_keypress(KeyCode::Char('c').into());
 
         let result = test_app.app.clipboard.clone();
-        let mut expected = PathBuf::new();
-        expected.push(env::current_dir().unwrap());
-        expected.push(test_file_name);
 
-        assert_eq!(result.unwrap(), expected);
-
-        match fs::remove_file(expected) {
-            Ok(_) => println!("Deleted copy_test.txt"),
-            Err(e) => println!("{e:?}"),
-        };
+        assert_eq!(result.unwrap(), test_filepath);
+        test_dir.close().unwrap();
     }
 
     #[test]
     fn test_keypress_paste() {
-        let test_file_name = "paste_file.txt";
-        File::create_new(test_file_name).unwrap();
+        let test_filename = "paste_file.txt";
+        let test_dir = tempdir().unwrap();
+        let test_dirpath = test_dir.path();
+        let test_filepath = test_dir.path().join(test_filename);
+        let _test_file = fs::File::create(&test_filepath).unwrap();
 
         let mut test_app = setup();
+        test_app.app.current_dir = test_dirpath.to_path_buf();
+        test_app.app.parent_dir = test_dirpath.parent().unwrap().to_path_buf();
+        test_app.app.refresh_dirlist();
+
         loop {
-            test_app.app.handle_keypress(KeyCode::Down.into());
             let selected_idx = test_app.app.dir_items.state.selected().unwrap();
             let selected_entry = &test_app.app.dir_items.items[selected_idx];
-            if selected_entry.file_name() == test_file_name {
+            if selected_entry.file_name() == test_filename {
                 break;
             }
+            test_app.app.handle_keypress(KeyCode::Down.into());
         }
 
         test_app.app.handle_keypress(KeyCode::Char('c').into());
 
-        let test_dir = "test_temp";
-        fs::create_dir(test_dir).expect("Unable to create temp directory for unit testing");
+        let dest_dir = tempdir().unwrap();
+        let dest_dirpath = dest_dir.path();
+        let dest_filepath = dest_dir.path().join(test_filename);
+        test_app.app.refresh_dirlist();
 
-        let mut test_path = PathBuf::new();
-        test_path.push(env::current_dir().unwrap());
-        test_path.push(test_dir);
+        test_app.app.handle_keypress(KeyCode::Left.into());
 
+        // tempdir are hidden so to find our dest dir, we need to turn on hidden dir/files
+        test_app.app.handle_keypress(KeyCode::Char('h').into());
+        loop {
+            let selected_idx = test_app.app.dir_items.state.selected().unwrap();
+            let selected_entry = &test_app.app.dir_items.items[selected_idx];
+            if selected_entry.file_name() == dest_dirpath.file_name().unwrap() {
+                test_app.app.handle_keypress(KeyCode::Right.into());
+                break;
+            }
+            test_app.app.handle_keypress(KeyCode::Down.into());
+        }
         test_app.app.handle_keypress(KeyCode::Char('p').into());
+
+        assert!(File::open(dest_filepath).is_ok());
+        test_dir.close().unwrap();
+        dest_dir.close().unwrap();
     }
 
     #[test]
