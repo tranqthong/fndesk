@@ -153,6 +153,8 @@ impl App {
                 }
             } else if source_path.is_dir() {
                 utils::copy_dir_contents(source_path, &dest_path);
+                // TODO need to work out a way to know that the move is successful
+                // we don't want to delete the source dir unless we know the move is successful
             }
         }
         self.refresh_dirlist();

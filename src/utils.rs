@@ -32,7 +32,6 @@ pub fn get_init_dirpath() -> PathBuf {
 }
 
 pub fn delete_entry<T: AsRef<Path>>(selected_entry: T) {
-    // let entry_path = selected_entry.into();
     if selected_entry.as_ref().is_file() {
         let file_delete = fs::remove_file(selected_entry);
         match file_delete {
