@@ -1,10 +1,8 @@
 use std::{
-    env,
-    fs::{self, DirEntry},
-    path::{Path, PathBuf},
+    env, fs::{self, DirEntry}, io::Error, path::{Path, PathBuf}
 };
 
-use log::debug;
+use log::{debug, error};
 
 pub fn get_parent_dir<T: AsRef<Path>>(selected_dir: T) -> PathBuf {
     selected_dir
@@ -50,6 +48,21 @@ pub fn delete_entry<T: AsRef<Path>>(selected_entry: T) {
     }
 }
 
+pub fn copy_file<T: AsRef<Path>>(src_entry: DirEntry, dest_dir: T) -> Result<u64, Error>{
+    let mut entry_dest_path = PathBuf::new();
+    entry_dest_path.push(dest_dir.as_ref());
+    entry_dest_path.push(src_entry.file_name());
+    if entry_dest_path.exists() {
+        // until I figure out a way to gracefully ask if user wants to overwrite
+        // I'll just append _ to the end if there is already an identical file
+        let mut appended_dest_filename = src_entry.file_name().into_string().unwrap();
+        appended_dest_filename.push('_');
+        entry_dest_path.set_file_name(&appended_dest_filename);
+    }
+
+    fs::copy(src_entry.path(), entry_dest_path)
+}
+
 pub fn copy_dir_contents<T: AsRef<Path>>(source_dir: T, dest_dir: T) {
     let source_entries = fs::read_dir(source_dir).unwrap();
 
@@ -57,22 +70,11 @@ pub fn copy_dir_contents<T: AsRef<Path>>(source_dir: T, dest_dir: T) {
         match entry {
             Ok(entry) => {
                 if entry.metadata().unwrap().is_file() {
-                    let mut entry_dest_path = PathBuf::new();
-                    entry_dest_path.push(dest_dir.as_ref());
-                    entry_dest_path.push(entry.file_name());
-                    if entry_dest_path.exists() {
-                        // until I figure out a way to gracefully ask if user wants to overwrite
-                        // I'll just append _ to the end if there is already an identical file
-                        let mut appended_dest_filename = entry.file_name().into_string().unwrap();
-                        appended_dest_filename.push('_');
-                        entry_dest_path.set_file_name(&appended_dest_filename);
-                    }
-
-                    let entry_copy = fs::copy(entry.path(), entry_dest_path);
-                    match entry_copy {
-                        Ok(_) => debug!("Copy successful."),
-                        Err(e) => debug!("Copy Failed: {e:?}"),
-                    }
+                    match copy_file(entry, &dest_dir) {
+                        Ok(_) => (),
+                        // if the copy fails, we will move on to the next file
+                        Err(e) => error!("{e:?}"),
+                    };
                 } else if entry.metadata().unwrap().is_dir() {
                     let mut dest_subdir = PathBuf::new();
                     dest_subdir.push(&dest_dir);
