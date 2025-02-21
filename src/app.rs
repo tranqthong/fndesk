@@ -119,9 +119,9 @@ impl App {
                 // we replace whatever is currently in the clipboard
                 // considering maybe making it a stack
                 self.clipboard = Some(self.dir_items.items[idx].path());
-                self.status_text = format!("Added {:?} to clipboard", &self.dir_items.items[idx])
+                debug!("Added {:?} to clipboard", &self.dir_items.items[idx])
             }
-            None => self.status_text = "No file/directory selected!".to_string(),
+            None => debug!("No item selected to be added to clipboard."),
         }
     }
 

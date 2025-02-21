@@ -1,5 +1,8 @@
 use std::{
-    env, fs::{self, DirEntry}, io::Error, path::{Path, PathBuf}
+    env,
+    fs::{self, DirEntry},
+    io::Error,
+    path::{Path, PathBuf},
 };
 
 use log::{debug, error};
@@ -48,7 +51,7 @@ pub fn delete_entry<T: AsRef<Path>>(selected_entry: T) {
     }
 }
 
-pub fn copy_file<T: AsRef<Path>>(src_entry: DirEntry, dest_dir: T) -> Result<u64, Error>{
+pub fn copy_file<T: AsRef<Path>>(src_entry: DirEntry, dest_dir: T) -> Result<u64, Error> {
     let mut entry_dest_path = PathBuf::new();
     entry_dest_path.push(dest_dir.as_ref());
     entry_dest_path.push(src_entry.file_name());
