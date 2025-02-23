@@ -28,7 +28,7 @@ pub fn get_dir_items<T: AsRef<Path>>(selected_dir: T, show_hidden: &bool) -> Vec
     item_paths
 }
 
-pub fn get_init_dirpath() -> PathBuf {
+pub fn get_current_dirpath() -> PathBuf {
     env::current_dir().expect("Current Directory does not exists or invalid permissions")
 }
 
@@ -111,8 +111,8 @@ mod tests {
     use tempfile::tempdir;
 
     #[test]
-    fn test_get_init_dirpath() {
-        let result = get_init_dirpath();
+    fn test_get_current_dirpath() {
+        let result = get_current_dirpath();
         let expected = fs::canonicalize(PathBuf::from(".")).unwrap();
 
         assert_eq!(expected, result);
@@ -120,7 +120,7 @@ mod tests {
 
     #[test]
     fn test_get_parent_dir() {
-        let init_dir = get_init_dirpath();
+        let init_dir = get_current_dirpath();
         let result = get_parent_dir(&init_dir);
         let expected = fs::canonicalize(PathBuf::from("..")).unwrap();
 
@@ -129,7 +129,7 @@ mod tests {
 
     #[test]
     fn test_get_dir_items_no_hidden() {
-        let init_dir = get_init_dirpath();
+        let init_dir = get_current_dirpath();
         let result = get_dir_items(&init_dir, &false);
 
         // there are currently six items found in the project root folder:
@@ -139,7 +139,7 @@ mod tests {
 
     #[test]
     fn test_get_dir_items_all() {
-        let init_dir = get_init_dirpath();
+        let init_dir = get_current_dirpath();
         let result = get_dir_items(&init_dir, &true);
 
         // like the above, but with 8 counting 3 hidden dir/files:
@@ -171,7 +171,7 @@ mod tests {
 
     #[test]
     fn test_copy_single_file() {
-        let src_dir = get_init_dirpath();
+        let src_dir = get_current_dirpath();
         let dest_dir = tempdir().unwrap();
 
         let mut license_filepath = PathBuf::new();
@@ -191,7 +191,7 @@ mod tests {
 
     #[test]
     fn test_copy_subdir_file() {
-        let src_dir = get_init_dirpath();
+        let src_dir = get_current_dirpath();
         let dest_dir = tempdir().unwrap();
 
         let mut self_filepath = PathBuf::new();

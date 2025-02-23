@@ -2,8 +2,9 @@ use std::path::PathBuf;
 
 use crate::utils;
 
+#[allow(deprecated)] // TODO remove after std::env::home has been undeprecated
 pub fn parse_args(args: Vec<String>) -> PathBuf {
-    let mut init_dir = utils::get_init_dirpath();
+    let mut init_dir = utils::get_current_dirpath();
 
     if !args.is_empty() {
         if args.len() > 2 {
@@ -16,11 +17,17 @@ pub fn parse_args(args: Vec<String>) -> PathBuf {
 
             if !init_dir.exists() {
                 println!("Directory does not exist or non sufficient permission to open. Starting with current directory");
-                init_dir = utils::get_init_dirpath()
+                // if for some reason we can't open the user specified dir
+                // then we default to either the home_dir based on the user's env
+                // otherwise we just start with the current directory
+                // std::env::home_dir will be undeprecated in the next rust release
+                init_dir = match std::env::home_dir() {
+                    Some(x) => x,
+                    None => utils::get_current_dirpath(),
+                };
             }
         }
     }
-
     init_dir
 }
 
@@ -49,7 +56,8 @@ mod tests {
 
         let result = parse_args(args);
 
-        assert_eq!(result, tmp_dirpath.into_path());
+        assert_eq!(result, tmp_dirpath.as_ref().to_path_buf());
+        tmp_dirpath.close().unwrap();
     }
 
     #[test]
@@ -68,7 +76,7 @@ mod tests {
     #[test]
     fn test_invalid_dir() {
         let args: Vec<String> = vec!["program".to_string(), "fake_dir".to_string()];
-        let expected_path = fs::canonicalize(PathBuf::from(".")).unwrap();
+        let expected_path = std::env::home_dir().unwrap();
 
         let result = parse_args(args);
 
