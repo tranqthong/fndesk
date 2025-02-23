@@ -6,8 +6,8 @@ Basic terminal file browser.
 Note: Currently in development, things will change without any notice
 
 ## Dependencies
-- [cargo](https://github.com/rust-lang/cargo/) >= 1.83.0
-- [rustc](https://www.rust-lang.org/) >= 1.83.0
+- [cargo](https://github.com/rust-lang/cargo/) >= 1.85.0
+- [rustc](https://www.rust-lang.org/) >= 1.85.0
 
 See [Cargo.toml](Cargo.toml)
 
