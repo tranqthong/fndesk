@@ -74,6 +74,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(deprecated)] // TODO remove with the other one in next rust release
     fn test_invalid_dir() {
         let args: Vec<String> = vec!["program".to_string(), "fake_dir".to_string()];
         let expected_path = std::env::home_dir().unwrap();
