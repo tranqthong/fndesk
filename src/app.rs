@@ -237,11 +237,12 @@ impl App {
             self.refresh_dirlist();
         } else {
             let selected_entry_path = selected_entry.path().to_str().unwrap().to_owned();
+            // let command_strings = vec![selected_entry_path, " &".to_string()];
 
             // TODO need to handle opening files on Windows/Mac in the future
             match Command::new("xdg-open").arg(selected_entry_path).output() {
                 Ok(_) => (),
-                Err(_) => self.status_text = "Unable to open file, check permissions".to_string(),
+                Err(e) => debug!("{:?}", e),
             }
         }
     }
