@@ -2,6 +2,7 @@ use std::{
     env,
     fs::{self, DirEntry},
     io::Error,
+    os::unix::fs::{MetadataExt, PermissionsExt},
     path::{Path, PathBuf},
 };
 
@@ -47,7 +48,7 @@ pub fn delete_entry<T: AsRef<Path>>(selected_entry: T) {
             Err(e) => debug!("Unable to delete dir, check permissions: {e:?}"),
         }
     } else {
-        debug!("Attempting to delete something that isn't a file or a dir???");
+        debug!("Attempting to delete something that isn't a file or a dir.");
     }
 }
 

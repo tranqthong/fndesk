@@ -8,7 +8,7 @@ use crossterm::event::{KeyCode, KeyEvent};
 use log::debug;
 use ratatui::widgets::ListState;
 
-use crate::utils;
+use crate::{status_bar::status_bar, utils};
 
 #[derive(Debug, PartialEq)]
 pub enum AppState {
@@ -79,6 +79,7 @@ impl App {
         self.dir_items
             .set_items(utils::get_dir_items(&self.current_dir, &self.show_hidden));
         self.auto_select_first();
+        // self.status_text = status_bar(self.dir_items.state.selected());
     }
 
     fn auto_select_first(&mut self) {

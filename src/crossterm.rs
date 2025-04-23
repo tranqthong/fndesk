@@ -12,7 +12,6 @@ use crate::ui;
 
 pub fn run<T: AsRef<Path>>(init_dir: T) -> Result<(), Box<dyn Error>> {
     let mut terminal = ratatui::init();
-    // should always be able grab the current directory from which the program is started
     let app = App::new(init_dir);
     let app_result = run_app(&mut terminal, app);
 

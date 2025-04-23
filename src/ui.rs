@@ -1,6 +1,6 @@
 use ratatui::{
     layout::{Constraint, Direction, Layout},
-    style::Style,
+    style::{Style, Stylize},
     text::Text,
     widgets::{Block, List, ListItem, Paragraph},
     Frame,
@@ -8,7 +8,7 @@ use ratatui::{
 
 use crate::{
     app::App,
-    ui_styles::{ROUNDED_BLOCK, SELECTED_DIR_STYLE, SELECTED_ENTRY_STYLE},
+    ui_styles::{CURRENT_DIR_STYLE, ROUNDED_BLOCK, SELECTED_ENTRY_STYLE},
 };
 
 pub fn draw(frame: &mut Frame, app: &mut App) {
@@ -42,7 +42,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
 
     let title_block = Block::default().style(Style::default());
     let current_dir_path = app.current_dir.clone().into_os_string().into_string();
-    let title = Paragraph::new(Text::styled(current_dir_path.unwrap(), SELECTED_DIR_STYLE))
+    let title = Paragraph::new(Text::styled(current_dir_path.unwrap(), CURRENT_DIR_STYLE))
         .block(title_block);
 
     let item_list: Vec<ListItem> = app
