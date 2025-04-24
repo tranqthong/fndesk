@@ -49,9 +49,16 @@ mod tests {
         let _test_file = fs::File::create(&test_filepath).unwrap();
 
         let status_bar_str = status_bar(&test_filepath);
+        let testfile_attributes = test_filepath.metadata().unwrap();
+
+        let test_user = testfile_attributes.st_uid();
+        let test_username = get_user_by_uid(test_user).unwrap().name().to_owned();
+        let mut expected_string = String::from("-rw-r--r--  ");
+        expected_string.push_str(test_username.to_str().unwrap());
+        expected_string.push_str("  users  0");
 
         test_dir.close().unwrap();
-        assert_eq!("-rw-r--r--  thong  users  0", status_bar_str);
+        assert_eq!(expected_string, status_bar_str);
     }
 
     #[test]
