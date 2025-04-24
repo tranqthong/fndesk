@@ -8,7 +8,7 @@ use ratatui::{
 
 use crate::{
     app::App,
-    ui_styles::{CURRENT_DIR_STYLE, ROUNDED_BLOCK, SELECTED_ENTRY_STYLE},
+    ui_styles::{CURRENT_DIR_STYLE, ROUNDED_BLOCK, SELECTED_ENTRY_STYLE, STATUS_BAR_STYLE},
 };
 
 pub fn draw(frame: &mut Frame, app: &mut App) {
@@ -57,7 +57,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         .block(ROUNDED_BLOCK);
 
     let status_contents = Paragraph::new(app.status_text.clone());
-    let status_bar = Paragraph::left_aligned(status_contents);
+    let status_bar = Paragraph::left_aligned(status_contents).style(STATUS_BAR_STYLE);
 
     frame.render_widget(title, rect_sections[0]);
     frame.render_stateful_widget(dir_items_list, rect_sections[1], &mut app.dir_items.state);

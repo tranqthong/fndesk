@@ -73,13 +73,14 @@ impl App {
             KeyCode::Esc | KeyCode::Backspace | KeyCode::Left => self.nav_up_dir(),
             _ => {}
         }
+        self.update_status_bar();
     }
 
     pub fn refresh_dirlist(&mut self) {
         self.dir_items
             .set_items(utils::get_dir_items(&self.current_dir, &self.show_hidden));
         self.auto_select_first();
-        // self.status_text = status_bar(self.dir_items.state.selected());
+        self.update_status_bar();
     }
 
     fn auto_select_first(&mut self) {
@@ -89,6 +90,16 @@ impl App {
                 self.dir_items.state.select_first();
             }
         }
+    }
+
+    fn update_status_bar(&mut self) {
+        match self.dir_items.state.selected() {
+            Some(idx) => {
+                self.status_text = status_bar(self.dir_items.items[idx].path());
+            }
+            None => (),
+        }
+
     }
 
     fn quit_app(&mut self) {
