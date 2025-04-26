@@ -8,7 +8,7 @@ use crossterm::event::{KeyCode, KeyEvent};
 use log::debug;
 use ratatui::widgets::ListState;
 
-use crate::{status_bar::status_bar, utils};
+use crate::{status_bar::status_string, utils};
 
 #[derive(Debug, PartialEq)]
 pub enum AppState {
@@ -95,11 +95,12 @@ impl App {
     fn update_status_bar(&mut self) {
         match self.dir_items.state.selected() {
             Some(idx) => {
-                self.status_text = status_bar(self.dir_items.items[idx].path());
+                if idx < self.dir_items.items.len() {
+                    self.status_text = status_string(self.dir_items.items[idx].path());
+                }
             }
             None => (),
         }
-
     }
 
     fn quit_app(&mut self) {

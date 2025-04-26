@@ -2,7 +2,6 @@ use std::{
     env,
     fs::{self, DirEntry},
     io::Error,
-    os::unix::fs::{MetadataExt, PermissionsExt},
     path::{Path, PathBuf},
 };
 

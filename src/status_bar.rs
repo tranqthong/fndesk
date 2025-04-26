@@ -2,9 +2,10 @@ use std::os::linux::fs::MetadataExt;
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 
+use human_bytes::human_bytes;
 use users::{get_group_by_gid, get_user_by_uid};
 
-pub fn status_bar<T: AsRef<Path>>(current_entry: T) -> String {
+pub fn status_string<T: AsRef<Path>>(current_entry: T) -> String {
     let file_attributes = current_entry.as_ref().metadata();
     match file_attributes {
         Ok(attributes) => {
@@ -12,7 +13,7 @@ pub fn status_bar<T: AsRef<Path>>(current_entry: T) -> String {
             let entry_permissions = attributes.permissions();
             let user_id = attributes.st_uid();
             let group_id = attributes.st_gid();
-            let filesize_bytes = attributes.st_size();
+            let filesize_bytes = human_bytes(attributes.st_size() as f64);
             let entry_last_modified = attributes.modified();
 
             let user = get_user_by_uid(user_id).unwrap();
@@ -48,7 +49,7 @@ mod tests {
         let test_filepath = test_dir.path().join("test_file.txt");
         let _test_file = fs::File::create(&test_filepath).unwrap();
 
-        let status_bar_str = status_bar(&test_filepath);
+        let status_bar_str = status_string(&test_filepath);
         let testfile_attributes = test_filepath.metadata().unwrap();
 
         let test_user = testfile_attributes.st_uid();
@@ -64,7 +65,7 @@ mod tests {
     #[test]
     fn test_status_bar_tempdir() {
         let test_dir = tempdir().unwrap();
-        let status_bar_str = status_bar(test_dir.path().parent().unwrap());
+        let status_bar_str = status_string(test_dir.path().parent().unwrap());
 
         assert_eq!("drwxrwxrwt  root  root  740", status_bar_str);
     }
