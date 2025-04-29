@@ -53,7 +53,7 @@ impl App {
             parent_dir: utils::get_parent_dir(&init_dir),
             dir_items: DirListState::new(utils::get_dir_items(&init_dir, &false)),
             show_hidden: false,
-            status_text: String::from("Status Text Placeholder"),
+            status_text: String::from("Hello There"),
             clipboard: None,
         }
     }
@@ -93,13 +93,10 @@ impl App {
     }
 
     fn update_status_bar(&mut self) {
-        match self.dir_items.state.selected() {
-            Some(idx) => {
-                if idx < self.dir_items.items.len() {
-                    self.status_text = status_string(self.dir_items.items[idx].path());
-                }
+        if let Some(idx) = self.dir_items.state.selected() {
+            if idx < self.dir_items.items.len() {
+                self.status_text = status_string(self.dir_items.items[idx].path());
             }
-            None => (),
         }
     }
 

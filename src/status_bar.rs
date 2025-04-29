@@ -3,6 +3,7 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 
 use human_bytes::human_bytes;
+use log::debug;
 use users::{get_group_by_gid, get_user_by_uid};
 
 pub fn status_string<T: AsRef<Path>>(current_entry: T) -> String {
@@ -14,25 +15,40 @@ pub fn status_string<T: AsRef<Path>>(current_entry: T) -> String {
             let user_id = attributes.st_uid();
             let group_id = attributes.st_gid();
             let filesize_bytes = human_bytes(attributes.st_size() as f64);
-            let entry_last_modified = attributes.modified();
+            let _entry_last_modified = attributes.modified();
 
-            let user = get_user_by_uid(user_id).unwrap();
-            let username_str = user.name();
-            let group_str = get_group_by_gid(group_id).unwrap().name().to_owned();
             let permission_string = unix_mode::to_string(entry_permissions.mode());
 
             status_string.push_str(&permission_string);
             status_string.push_str("  ");
-            status_string.push_str(username_str.to_str().unwrap());
+            status_string.push_str(&get_username_from_id(user_id));
             status_string.push_str("  ");
-            status_string.push_str(group_str.to_str().unwrap());
+            status_string.push_str(&get_groupname_from_id(group_id));
             status_string.push_str("  ");
             status_string.push_str(&filesize_bytes.to_string());
-            // status_string.push_str("{}")
 
             status_string
         }
-        Err(_) => todo!(),
+        Err(_) => {
+            debug!("Unable to retreive file metadata.");
+            "".to_string()
+        }
+    }
+}
+
+fn get_username_from_id(user_id: u32) -> String {
+    let user = get_user_by_uid(user_id);
+    match user {
+        Some(user) => user.name().to_string_lossy().to_string(),
+        None => user_id.to_string(),
+    }
+}
+
+fn get_groupname_from_id(group_id: u32) -> String {
+    let group = get_group_by_gid(group_id);
+    match group {
+        Some(group) => group.name().to_string_lossy().to_string(),
+        None => group_id.to_string(),
     }
 }
 

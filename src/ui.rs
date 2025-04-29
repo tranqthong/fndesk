@@ -1,6 +1,6 @@
 use ratatui::{
     layout::{Constraint, Direction, Layout},
-    style::{Style, Stylize},
+    style::Style,
     text::Text,
     widgets::{Block, List, ListItem, Paragraph},
     Frame,
