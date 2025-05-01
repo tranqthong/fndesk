@@ -62,7 +62,7 @@ impl App {
         match key.code {
             KeyCode::Char('q') => self.quit_app(),
             KeyCode::Char('h') => self.toggle_hidden(),
-            KeyCode::Char('c') => self.add_selected_clipboard(),
+            KeyCode::Char('c') => self.add_selected_to_clipboard(),
             KeyCode::Char('p') => self.copy_from_clipboard(),
             KeyCode::Char('x') => self.move_from_clipboard(),
             KeyCode::Delete => self.trash_selected(),
@@ -123,11 +123,11 @@ impl App {
         // TODO implement when two column pane is implemented
     }
 
-    fn add_selected_clipboard(&mut self) {
+    fn add_selected_to_clipboard(&mut self) {
         match self.dir_items.state.selected() {
             Some(idx) => {
                 // we replace whatever is currently in the clipboard
-                // considering maybe making it a stack
+                // considering maybe making it a stack/list in the future
                 self.clipboard = Some(self.dir_items.items[idx].path());
                 debug!("Added {:?} to clipboard", &self.dir_items.items[idx])
             }
@@ -159,10 +159,10 @@ impl App {
                         utils::delete_entry(source_path);
                         self.clipboard = None;
                     }
-                    Err(e) => self.status_text = format!("Unable to paste: {e:?}"),
+                    Err(e) => self.status_text = format!("Unable to move: {e:?}"),
                 }
             } else if source_path.is_dir() {
-                utils::copy_dir_contents(source_path, &dest_path);
+                utils::copy_dir_contents(source_path, &dest_path, true);
                 // TODO need to work out a way to know that the move is successful
                 // we don't want to delete the source dir unless we know the move is successful
             }
@@ -191,13 +191,12 @@ impl App {
                 let file_copy = fs::copy(source_path, dest_path);
                 match file_copy {
                     Ok(_) => {
-                        self.status_text = "Pasted from clipboard".to_string();
                         self.clipboard = None;
                     }
-                    Err(e) => self.status_text = format!("Unable to paste: {e:?}"),
+                    Err(e) => self.status_text = format!("Unable to copy: {e:?}"),
                 }
             } else if source_path.is_dir() {
-                utils::copy_dir_contents(source_path, &dest_path);
+                utils::copy_dir_contents(source_path, &dest_path, false);
             } else {
                 debug!("You shouldn't be here, but if you are then we have neither file or dir");
             }
@@ -247,7 +246,6 @@ impl App {
             self.refresh_dirlist();
         } else {
             let selected_entry_path = selected_entry.path().to_str().unwrap().to_owned();
-            // let command_strings = vec![selected_entry_path, " &".to_string()];
 
             // TODO need to handle opening files on Windows/Mac in the future
             match Command::new("xdg-open").arg(selected_entry_path).output() {
