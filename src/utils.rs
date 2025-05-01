@@ -59,10 +59,9 @@ pub fn copy_dir_contents<T: AsRef<Path>>(source_dir: T, dest_dir: T, move_conten
                     match fs::copy(entry.path(), &dest_dir) {
                         Ok(_) => {
                             if move_contents {
-                                // TODO delete original file
                                 delete_entry(entry.path());
                             }
-                        },
+                        }
                         // if the copy fails, we will move on to the next file
                         Err(e) => error!("{e:?}"),
                     };
