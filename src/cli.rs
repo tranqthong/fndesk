@@ -2,7 +2,6 @@ use std::path::PathBuf;
 
 use crate::utils;
 
-#[allow(deprecated)] // TODO remove after std::env::home has been undeprecated
 pub fn parse_args(args: Vec<String>) -> PathBuf {
     let mut init_dir = utils::get_current_dirpath();
 
@@ -20,7 +19,6 @@ pub fn parse_args(args: Vec<String>) -> PathBuf {
                 // if for some reason we can't open the user specified dir
                 // then we default to either the home_dir based on the user's env
                 // otherwise we just start with the current directory
-                // std::env::home_dir will be undeprecated in the next rust release
                 init_dir = match std::env::home_dir() {
                     Some(x) => x,
                     None => utils::get_current_dirpath(),
@@ -74,7 +72,6 @@ mod tests {
     }
 
     #[test]
-    #[allow(deprecated)] // TODO remove with the other one in next rust release
     fn test_invalid_dir() {
         let args: Vec<String> = vec!["program".to_string(), "fake_dir".to_string()];
         let expected_path = std::env::home_dir().unwrap();
