@@ -1,10 +1,11 @@
 use std::{
     env,
-    fs::{self, DirEntry},
+    fs::{self, DirEntry, ReadDir},
+    io::Error,
     path::{Path, PathBuf},
 };
 
-use log::{debug, error};
+use log::{debug, error, log};
 
 pub fn get_parent_dir<T: AsRef<Path>>(selected_dir: T) -> PathBuf {
     selected_dir
@@ -50,45 +51,33 @@ pub fn delete_entry<T: AsRef<Path>>(selected_entry: T) {
     }
 }
 
-pub fn copy_dir_contents<T: AsRef<Path>>(source_dir: T, dest_dir: T, move_contents: bool) {
-    let source_entries = fs::read_dir(source_dir).unwrap();
-    for entry in source_entries {
-        match entry {
-            Ok(entry) => {
-                if entry.metadata().unwrap().is_file() {
-                    match fs::copy(entry.path(), &dest_dir) {
-                        Ok(_) => {
-                            if move_contents {
-                                delete_entry(entry.path());
-                            }
-                        }
-                        // if the copy fails, we will move on to the next file
-                        Err(e) => error!("{e:?}"),
-                    };
-                } else if entry.metadata().unwrap().is_dir() {
-                    let mut dest_subdir = PathBuf::new();
-                    dest_subdir.push(&dest_dir);
-                    dest_subdir.push(entry.file_name());
-                    if !dest_subdir.exists() {
-                        let create_subdir = fs::create_dir(&dest_subdir);
-                        match create_subdir {
-                            Ok(_) => (),
-                            Err(e) => {
-                                debug!("Unable to create directory, skipping... {e:?}");
-                                continue;
-                            }
-                        }
-                    }
-                    copy_dir_contents(entry.path(), dest_subdir, move_contents);
-                } else {
-                    debug!(
-                        "Entry is neither file or directory. {:?}",
-                        entry.file_name()
-                    );
-                }
+pub fn copy_file<T: AsRef<Path>>(src_filepath: T, dest_filepath: T, move_contents: bool) {
+    match fs::copy(src_filepath.as_ref(), dest_filepath.as_ref()) {
+        Ok(_) => {
+            if move_contents {
+                delete_entry(src_filepath);
             }
-            Err(e) => debug!("Entry error: {:?}", e),
         }
+        Err(e) => {
+            error!("Unable to copy file, Error: {:?}", e)
+        }
+    }
+}
+
+pub fn copy_directory<T: AsRef<Path>>(src_path: T, dest_dir: T, move_contents: bool) {
+    if dest_dir.as_ref().exists() {
+        // until I figure out a way to gracefully ask if user wants to overwrite
+        // I'll just append _ to the end if there is already an identical file
+        let mut appended_filename = src_path
+            .as_ref()
+            .file_name()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_owned();
+        appended_filename.push('_');
+        let mut dest_dir = dest_dir.as_ref().to_owned();
+        dest_dir.set_file_name(appended_filename);
     }
 }
 
@@ -161,13 +150,13 @@ mod tests {
         let src_dir = get_current_dirpath();
         let dest_dir = tempdir().unwrap();
 
-        let mut license_filepath = PathBuf::new();
-        license_filepath.push(&src_dir);
+        let mut license_filepath = src_dir;
+        // license_filepath.push(&src_dir);
         license_filepath.push("LICENSE");
 
-        let expected_file_contents = fs::read_to_string(license_filepath).unwrap();
+        let expected_file_contents = fs::read_to_string(&license_filepath).unwrap();
 
-        copy_dir_contents(src_dir.as_path(), dest_dir.path(), false);
+        copy_directory(license_filepath.as_path(), dest_dir.path(), false);
 
         let result_file_contents = fs::read_to_string(dest_dir.path().join("LICENSE")).unwrap();
 
@@ -188,7 +177,7 @@ mod tests {
 
         let expected_file_contents = fs::read_to_string(self_filepath).unwrap();
 
-        copy_dir_contents(src_dir.as_path(), dest_dir.path(), false);
+        copy_directory(src_dir.as_path(), dest_dir.path(), false);
 
         let mut result_filepath = PathBuf::new();
         result_filepath.push(&dest_dir);

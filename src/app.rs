@@ -162,7 +162,7 @@ impl App {
                     Err(e) => self.status_text = format!("Unable to move: {e:?}"),
                 }
             } else if source_path.is_dir() {
-                utils::copy_dir_contents(source_path, &dest_path, true);
+                utils::copy_directory(source_path, &dest_path, true);
             }
         }
         self.refresh_dirlist();
@@ -170,33 +170,22 @@ impl App {
 
     fn copy_from_clipboard(&mut self) {
         if self.clipboard.is_some() {
-            let source_path = self.clipboard.as_ref().unwrap();
-            let src_filename = source_path.file_name().unwrap();
+            let src_path = self.clipboard.as_ref().unwrap();
+            if src_path.is_file() {
+                let src_filename = src_path.file_name().unwrap();
 
-            let mut dest_path = PathBuf::new();
-            dest_path.push(&self.current_dir);
-            dest_path.push(src_filename);
+                let mut dest_path = PathBuf::new();
+                dest_path.push(&self.current_dir);
+                dest_path.push(src_filename);
 
-            if source_path.is_file() {
                 if dest_path.exists() {
-                    // until I figure out a way to gracefully ask if user wants to overwrite
-                    // I'll just append _ to the end if there is already an identical file
-                    let mut appended_filename = src_filename.to_owned().into_string().unwrap();
-                    appended_filename.push('_');
-                    dest_path.set_file_name(&appended_filename);
+                    dest_path.push("_");
                 }
 
-                let file_copy = fs::copy(source_path, dest_path);
-                match file_copy {
-                    Ok(_) => {
-                        self.clipboard = None;
-                    }
-                    Err(e) => self.status_text = format!("Unable to copy: {e:?}"),
-                }
-            } else if source_path.is_dir() {
-                utils::copy_dir_contents(source_path, &dest_path, false);
-            } else {
-                debug!("You shouldn't be here, but if you are then we have neither file or dir");
+                utils::copy_file(src_path, &dest_path, false);
+            } else if src_path.is_dir() {
+                // for directories we will attempt to merge
+                // later we can give the user the option on whether or not to merge
             }
         }
         self.refresh_dirlist();

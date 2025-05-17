@@ -72,7 +72,7 @@ mod tests {
         let test_username = get_user_by_uid(test_user).unwrap().name().to_owned();
         let mut expected_string = String::from("-rw-r--r--  ");
         expected_string.push_str(test_username.to_str().unwrap());
-        expected_string.push_str("  users  0");
+        expected_string.push_str("  users  0 B");
 
         test_dir.close().unwrap();
         assert_eq!(expected_string, status_bar_str);
@@ -83,6 +83,7 @@ mod tests {
         let test_dir = tempdir().unwrap();
         let status_bar_str = status_string(test_dir.path().parent().unwrap());
 
-        assert_eq!("drwxrwxrwt  root  root  740", status_bar_str);
+        test_dir.close().unwrap();
+        assert_eq!("drwxrwxrwt  root  root  560 B", status_bar_str);
     }
 }
