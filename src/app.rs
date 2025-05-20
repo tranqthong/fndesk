@@ -8,7 +8,7 @@ use crossterm::event::{KeyCode, KeyEvent};
 use log::debug;
 use ratatui::widgets::ListState;
 
-use crate::{status_bar::status_string, utils};
+use crate::{dir, entries, status_bar::status_string};
 
 #[derive(Debug, PartialEq)]
 pub enum AppState {
@@ -50,8 +50,8 @@ impl App {
         App {
             app_state: AppState::Running,
             current_dir: init_dir.as_ref().to_path_buf(),
-            parent_dir: utils::get_parent_dir(&init_dir),
-            dir_items: DirListState::new(utils::get_dir_items(&init_dir, &false)),
+            parent_dir: dir::get_parent_dir(&init_dir),
+            dir_items: DirListState::new(dir::get_dir_items(&init_dir, &false)),
             show_hidden: false,
             status_text: String::from("Hello There"),
             clipboard: None,
@@ -78,7 +78,7 @@ impl App {
 
     pub fn refresh_dirlist(&mut self) {
         self.dir_items
-            .set_items(utils::get_dir_items(&self.current_dir, &self.show_hidden));
+            .set_items(dir::get_dir_items(&self.current_dir, &self.show_hidden));
         self.auto_select_first();
         self.update_status_bar();
     }
@@ -107,7 +107,7 @@ impl App {
     fn toggle_hidden(&mut self) {
         self.show_hidden = !self.show_hidden;
         self.dir_items
-            .set_items(utils::get_dir_items(&self.current_dir, &self.show_hidden));
+            .set_items(dir::get_dir_items(&self.current_dir, &self.show_hidden));
         self.auto_select_first();
     }
 
@@ -156,13 +156,13 @@ impl App {
                 match file_move {
                     Ok(_) => {
                         self.status_text = "Pasted from clipboard".to_string();
-                        utils::delete_entry(source_path);
+                        entries::delete_entry(source_path);
                         self.clipboard = None;
                     }
                     Err(e) => self.status_text = format!("Unable to move: {e:?}"),
                 }
             } else if source_path.is_dir() {
-                utils::copy_directory(source_path, &dest_path, true);
+                dir::copy_directory(source_path, &dest_path, true);
             }
         }
         self.refresh_dirlist();
@@ -182,7 +182,7 @@ impl App {
                     dest_path.push("_");
                 }
 
-                utils::copy_file(src_path, &dest_path, false);
+                entries::copy_file(src_path, &dest_path, false);
             } else if src_path.is_dir() {
                 // for directories we will attempt to merge
                 // later we can give the user the option on whether or not to merge
@@ -211,7 +211,7 @@ impl App {
 
     fn nav_up_dir(&mut self) {
         let new_current_dirpath = self.parent_dir.clone();
-        let new_parent_dirpath = utils::get_parent_dir(&new_current_dirpath);
+        let new_parent_dirpath = dir::get_parent_dir(&new_current_dirpath);
 
         // we only want to be able to navigate up to a parent if we're not already in the root directory
         if new_parent_dirpath != self.current_dir {
