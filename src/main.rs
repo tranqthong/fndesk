@@ -4,11 +4,11 @@ mod app;
 mod cli;
 #[cfg(feature = "crossterm")]
 mod crossterm;
+mod dir;
 mod entries;
 mod status_bar;
 mod ui;
 mod ui_styles;
-mod dir;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let env_log = env_logger::Env::default();

@@ -32,11 +32,7 @@ pub fn get_current_dirpath() -> PathBuf {
     env::current_dir().expect("Current Directory does not exists or invalid permissions")
 }
 
-
-
-pub fn create_new_dir<T: AsRef<Path>>(root_path: T, new_dirpath: T) {
-
-}
+pub fn create_new_dir<T: AsRef<Path>>(root_path: T, new_dirpath: T) {}
 
 pub fn copy_directory<T: AsRef<Path>>(src_path: T, dest_dir: T, move_contents: bool) {
     if dest_dir.as_ref().exists() {
@@ -56,8 +52,10 @@ pub fn copy_directory<T: AsRef<Path>>(src_path: T, dest_dir: T, move_contents: b
         match fs::create_dir(dest_dir) {
             Ok(_) => {
                 // TODO
-            },
-            Err(e) => {error!("Unable to create directory: {:?}", e)},
+            }
+            Err(e) => {
+                error!("Unable to create directory: {:?}", e)
+            }
         }
     }
 }
@@ -102,6 +100,4 @@ mod tests {
         // .git/, .gitignore, .vscode/
         assert_eq!(9, result.len());
     }
-
-
 }
