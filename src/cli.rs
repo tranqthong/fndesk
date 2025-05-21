@@ -1,9 +1,9 @@
 use std::path::PathBuf;
 
-use crate::dir;
+use crate::path;
 
 pub fn parse_args(args: Vec<String>) -> PathBuf {
-    let mut init_dir = dir::get_current_dirpath();
+    let mut init_dir = path::get_current_dirpath();
 
     if !args.is_empty() {
         if args.len() > 2 {
@@ -21,7 +21,7 @@ pub fn parse_args(args: Vec<String>) -> PathBuf {
                 // otherwise we just start with the current directory
                 init_dir = match std::env::home_dir() {
                     Some(x) => x,
-                    None => dir::get_current_dirpath(),
+                    None => path::get_current_dirpath(),
                 };
             }
         }

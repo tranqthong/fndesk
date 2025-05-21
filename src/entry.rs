@@ -37,7 +37,7 @@ pub fn copy_file<T: AsRef<Path>>(src_filepath: T, dest_filepath: T, move_content
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::dir;
+    use crate::path;
     use std::path::PathBuf;
     use tempfile::tempdir;
 
@@ -65,7 +65,7 @@ mod tests {
 
     #[test]
     fn test_copy_single_file() {
-        let src_dir = dir::get_current_dirpath();
+        let src_dir = path::get_current_dirpath();
         let dest_dir = tempdir().unwrap();
 
         let mut license_filepath = src_dir;
@@ -74,7 +74,7 @@ mod tests {
 
         let expected_file_contents = fs::read_to_string(&license_filepath).unwrap();
 
-        dir::copy_directory(license_filepath.as_path(), dest_dir.path(), false);
+        path::copy_directory(license_filepath.as_path(), dest_dir.path(), false);
 
         let result_file_contents = fs::read_to_string(dest_dir.path().join("LICENSE")).unwrap();
 
@@ -85,7 +85,7 @@ mod tests {
 
     #[test]
     fn test_copy_subdir_file() {
-        let src_dir = dir::get_current_dirpath();
+        let src_dir = path::get_current_dirpath();
         let dest_dir = tempdir().unwrap();
 
         let mut self_filepath = PathBuf::new();
@@ -95,7 +95,7 @@ mod tests {
 
         let expected_file_contents = fs::read_to_string(self_filepath).unwrap();
 
-        dir::copy_directory(src_dir.as_path(), dest_dir.path(), false);
+        path::copy_directory(src_dir.as_path(), dest_dir.path(), false);
 
         let mut result_filepath = PathBuf::new();
         result_filepath.push(&dest_dir);
