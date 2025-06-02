@@ -4,8 +4,8 @@ mod app;
 mod cli;
 #[cfg(feature = "crossterm")]
 mod crossterm;
-mod path;
 mod entry;
+mod path;
 mod status_bar;
 mod ui;
 mod ui_styles;

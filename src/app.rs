@@ -8,7 +8,7 @@ use crossterm::event::{KeyCode, KeyEvent};
 use log::debug;
 use ratatui::widgets::ListState;
 
-use crate::{path, entry, status_bar::status_string};
+use crate::{entry, path, status_bar::status_string};
 
 #[derive(Debug, PartialEq)]
 pub enum AppState {
@@ -172,15 +172,7 @@ impl App {
         if self.clipboard.is_some() {
             let src_path = self.clipboard.as_ref().unwrap();
             if src_path.is_file() {
-                let src_filename = src_path.file_name().unwrap();
-
-                let mut dest_path = PathBuf::new();
-                dest_path.push(&self.current_dir);
-                dest_path.push(src_filename);
-
-                if dest_path.exists() {
-                    dest_path.push("_");
-                }
+                let dest_path = entry::append_duplicates(src_path, &self.current_dir);
 
                 entry::copy_file(src_path, &dest_path, false);
             } else if src_path.is_dir() {

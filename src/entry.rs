@@ -1,4 +1,7 @@
-use std::{fs, path::Path};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use log::{debug, error};
 
@@ -21,6 +24,19 @@ pub fn delete_entry<T: AsRef<Path>>(selected_entry: T) {
     }
 }
 
+pub fn append_duplicates<T: AsRef<Path>>(src_entry: T, dest_entry: T) -> PathBuf {
+    let src_filename = src_entry.as_ref().file_name().unwrap();
+
+    let mut dest_path = PathBuf::new();
+    dest_path.push(dest_entry);
+    dest_path.push(src_filename);
+
+    if dest_path.exists() {
+        dest_path.push("_");
+    }
+    dest_path
+}
+
 pub fn copy_file<T: AsRef<Path>>(src_filepath: T, dest_filepath: T, move_contents: bool) {
     match fs::copy(src_filepath.as_ref(), dest_filepath.as_ref()) {
         Ok(_) => {
@@ -33,6 +49,8 @@ pub fn copy_file<T: AsRef<Path>>(src_filepath: T, dest_filepath: T, move_content
         }
     }
 }
+
+pub fn copy_dir<T: AsRef<Path>>(src_dirpath: T, dest_dirpath: T, move_contents: bool) {}
 
 #[cfg(test)]
 mod tests {
