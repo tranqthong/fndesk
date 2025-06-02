@@ -1,11 +1,8 @@
 use std::{
     env,
-    fs::{self, DirEntry, ReadDir},
-    io::Error,
+    fs::{self, DirEntry},
     path::{Path, PathBuf},
 };
-
-use log::{debug, error, log};
 
 pub fn get_parent_dir<T: AsRef<Path>>(selected_dir: T) -> PathBuf {
     selected_dir
@@ -32,33 +29,6 @@ pub fn get_current_dirpath() -> PathBuf {
     env::current_dir().expect("Current Directory does not exists or invalid permissions")
 }
 
-pub fn create_new_dir<T: AsRef<Path>>(root_path: T, new_dirpath: T) {}
-
-pub fn copy_directory<T: AsRef<Path>>(src_path: T, dest_dir: T, move_contents: bool) {
-    if dest_dir.as_ref().exists() {
-        // until I figure out a way to gracefully ask if user wants to overwrite
-        // I'll just append _ to the end if there is already an identical file
-        let mut appended_filename = src_path
-            .as_ref()
-            .file_name()
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .to_owned();
-        appended_filename.push('_');
-        let mut dest_dir = dest_dir.as_ref().to_owned();
-        dest_dir.set_file_name(appended_filename);
-    } else {
-        match fs::create_dir(dest_dir) {
-            Ok(_) => {
-                // TODO
-            }
-            Err(e) => {
-                error!("Unable to create directory: {:?}", e)
-            }
-        }
-    }
-}
 
 #[cfg(test)]
 mod tests {

@@ -1,11 +1,11 @@
 use std::{
-    fs::{self, DirEntry},
+    fs::DirEntry,
     path::{Path, PathBuf},
     process::Command,
 };
 
 use crossterm::event::{KeyCode, KeyEvent};
-use log::debug;
+use log::{debug, error};
 use ratatui::widgets::ListState;
 
 use crate::{entry, path, status_bar::status_string};
@@ -137,32 +137,18 @@ impl App {
 
     fn move_from_clipboard(&mut self) {
         if self.clipboard.is_some() {
-            let source_path = self.clipboard.as_ref().unwrap();
-            let src_filename = source_path.file_name().unwrap();
+            let src_path = self.clipboard.as_ref().unwrap();
+            if src_path.is_file() {
+                let dest_path = entry::append_duplicates(src_path, &self.current_dir);
 
-            let mut dest_path = PathBuf::new();
-            dest_path.push(&self.current_dir);
-            dest_path.push(src_filename);
-            if source_path.is_file() {
-                if dest_path.exists() {
-                    // append _ to the file name
-                    let mut appended_filename = src_filename.to_owned().into_string().unwrap();
-                    appended_filename.push('_');
-                    dest_path.set_file_name(&appended_filename);
+                entry::copy_file(src_path, &dest_path, true);
+            } else if src_path.is_dir() {
+                // for directories we will attempt to merge
+                // later we can give the user the option on whether or not to merge
+                match entry::copy_dir(src_path, &self.current_dir, true) {
+                    Ok(_) => (),
+                    Err(e) => error!("{e:}"),
                 }
-
-                let file_move = fs::copy(source_path, dest_path);
-
-                match file_move {
-                    Ok(_) => {
-                        self.status_text = "Pasted from clipboard".to_string();
-                        entry::delete_entry(source_path);
-                        self.clipboard = None;
-                    }
-                    Err(e) => self.status_text = format!("Unable to move: {e:?}"),
-                }
-            } else if source_path.is_dir() {
-                path::copy_directory(source_path, &dest_path, true);
             }
         }
         self.refresh_dirlist();
@@ -179,8 +165,8 @@ impl App {
                 // for directories we will attempt to merge
                 // later we can give the user the option on whether or not to merge
                 match entry::copy_dir(src_path, &self.current_dir, false) {
-                    Ok(_) => todo!(),
-                    Err(_) => todo!(),
+                    Ok(_) => (),
+                    Err(e) => error!("{e:}"),
                 }
             }
         }
@@ -243,6 +229,7 @@ impl App {
 mod tests {
     use super::*;
     use std::env;
+    use std::fs;
     use tempfile::tempdir;
 
     struct TestContext {
