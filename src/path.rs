@@ -29,7 +29,6 @@ pub fn get_current_dirpath() -> PathBuf {
     env::current_dir().expect("Current Directory does not exists or invalid permissions")
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -137,7 +137,6 @@ mod tests {
 
         let expected_file_contents = fs::read_to_string(&main_rs_filepath).unwrap();
 
-
         let copy_result = copy_dir(project_dir.as_path(), dest_dir.path(), false);
 
         let mut result_filepath = PathBuf::new();
