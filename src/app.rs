@@ -178,6 +178,10 @@ impl App {
             } else if src_path.is_dir() {
                 // for directories we will attempt to merge
                 // later we can give the user the option on whether or not to merge
+                match entry::copy_dir(src_path, &self.current_dir, false) {
+                    Ok(_) => todo!(),
+                    Err(_) => todo!(),
+                }
             }
         }
         self.refresh_dirlist();

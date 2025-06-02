@@ -1,5 +1,5 @@
 use std::{
-    fs,
+    fs, io,
     path::{Path, PathBuf},
 };
 
@@ -50,7 +50,30 @@ pub fn copy_file<T: AsRef<Path>>(src_filepath: T, dest_filepath: T, move_content
     }
 }
 
-pub fn copy_dir<T: AsRef<Path>>(src_dirpath: T, dest_dirpath: T, move_contents: bool) {}
+pub fn copy_dir<T: AsRef<Path>>(
+    src_dirpath: T,
+    dest_dirpath: T,
+    move_contents: bool,
+) -> io::Result<()> {
+    fs::create_dir_all(&dest_dirpath)?;
+    for entry in fs::read_dir(src_dirpath)? {
+        let entry = entry?;
+        let entry_type = entry.file_type()?;
+        if entry_type.is_dir() {
+            copy_dir(
+                entry.path(),
+                dest_dirpath.as_ref().join(entry.file_name()),
+                move_contents,
+            )?;
+        } else {
+            let appended_destpath =
+                append_duplicates(entry.path().as_path(), dest_dirpath.as_ref());
+            copy_file(entry.path(), appended_destpath, move_contents);
+        }
+    }
+
+    Ok(())
+}
 
 #[cfg(test)]
 mod tests {
