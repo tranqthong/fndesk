@@ -113,7 +113,6 @@ mod tests {
         let dest_dir = tempdir().unwrap();
 
         let mut license_filepath = src_dir;
-        // license_filepath.push(&src_dir);
         license_filepath.push("LICENSE");
 
         let expected_file_contents = fs::read_to_string(&license_filepath).unwrap();
@@ -161,7 +160,6 @@ mod tests {
         let dest_dir = tempdir().unwrap();
 
         let mut license_filepath = src_dir;
-        // license_filepath.push(&src_dir);
         license_filepath.push("LICENSE");
 
         let expected_file_contents = fs::read_to_string(&license_filepath).unwrap();
@@ -207,5 +205,26 @@ mod tests {
         assert!(first_copy_result.is_ok());
         assert!(second_copy_result.is_ok());
         assert_eq!(result_file_contents, expected_file_contents);
+    }
+
+    #[test]
+    fn test_move_file() {
+        let src_dir = tempdir().unwrap();
+        let dest_dir = tempdir().unwrap();
+
+        let test_filepath = src_dir.path().join("test_file.txt");
+        let _test_file = fs::File::create(&test_filepath).unwrap();
+
+        let dest_filepath = dest_dir.path();
+
+        let dest_filepath = append_duplicates(test_filepath.as_path(), dest_filepath);
+
+        copy_file(test_filepath.as_path(), dest_filepath.as_path(), true);
+
+        assert!(!test_filepath.exists());
+        assert!(dest_filepath.exists());
+
+        src_dir.close().unwrap();
+        dest_dir.close().unwrap();
     }
 }
