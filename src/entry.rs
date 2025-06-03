@@ -32,7 +32,10 @@ pub fn append_duplicates<T: AsRef<Path>>(src_entry: T, dest_entry: T) -> PathBuf
     dest_path.push(src_filename);
 
     if dest_path.exists() {
-        dest_path.push("_");
+        let mut new_filename = src_filename.to_owned().into_string().unwrap();
+        new_filename.push('_');
+        dest_path.pop();
+        dest_path.push(new_filename);
     }
     dest_path
 }
@@ -149,6 +152,60 @@ mod tests {
         dest_dir.close().unwrap();
 
         assert!(copy_result.is_ok());
+        assert_eq!(result_file_contents, expected_file_contents);
+    }
+
+    #[test]
+    fn test_copy_duplicate_file() {
+        let src_dir = path::get_current_dirpath();
+        let dest_dir = tempdir().unwrap();
+
+        let mut license_filepath = src_dir;
+        // license_filepath.push(&src_dir);
+        license_filepath.push("LICENSE");
+
+        let expected_file_contents = fs::read_to_string(&license_filepath).unwrap();
+
+        let dest_dirpath = append_duplicates(license_filepath.as_path(), dest_dir.path());
+        copy_file(license_filepath.as_path(), &dest_dirpath, false);
+
+        let dest_dirpath = append_duplicates(license_filepath.as_path(), dest_dir.path());
+        copy_file(license_filepath.as_path(), &dest_dirpath, false);
+
+        let result_file_contents = fs::read_to_string(dest_dir.path().join("LICENSE_")).unwrap();
+
+        dest_dir.close().unwrap();
+
+        assert_eq!(result_file_contents, expected_file_contents);
+    }
+
+    #[test]
+    fn test_copy_subdir_duplicates() {
+        let project_dir = path::get_current_dirpath();
+        let dest_dir = tempdir().unwrap();
+
+        let mut main_rs_filepath = PathBuf::new();
+        main_rs_filepath.push(&project_dir);
+        main_rs_filepath.push("src");
+        main_rs_filepath.push("main.rs");
+
+        let expected_file_contents = fs::read_to_string(&main_rs_filepath).unwrap();
+
+        let first_copy_result = copy_dir(project_dir.as_path(), dest_dir.path(), false);
+
+        let second_copy_result = copy_dir(project_dir.as_path(), dest_dir.path(), false);
+
+        let mut result_filepath = PathBuf::new();
+        result_filepath.push(&dest_dir);
+        result_filepath.push("src");
+        result_filepath.push("main.rs_");
+
+        let result_file_contents = fs::read_to_string(result_filepath).unwrap();
+
+        dest_dir.close().unwrap();
+
+        assert!(first_copy_result.is_ok());
+        assert!(second_copy_result.is_ok());
         assert_eq!(result_file_contents, expected_file_contents);
     }
 }
