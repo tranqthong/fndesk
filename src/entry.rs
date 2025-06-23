@@ -1,9 +1,21 @@
 use std::{
-    fs, io,
+    fs::{self, DirEntry},
+    io,
     path::{Path, PathBuf},
 };
 
 use log::{debug, error};
+
+pub fn trash_entry(selected_entry: &DirEntry) {
+    match trash::delete(selected_entry.path()) {
+        Ok(_) => {
+            debug!("Trashed: {:?}", selected_entry.file_name());
+        }
+        Err(e) => {
+            debug!("Unable to move to trash: {e:?}");
+        }
+    }
+}
 
 pub fn delete_entry<T: AsRef<Path>>(selected_entry: T) {
     if selected_entry.as_ref().is_file() {

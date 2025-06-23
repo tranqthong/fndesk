@@ -174,20 +174,10 @@ impl App {
     }
 
     fn trash_selected(&mut self) {
-        match self.dir_items.state.selected() {
-            Some(idx) => {
-                let selected_entry = &self.dir_items.items[idx];
-                match trash::delete(selected_entry.path()) {
-                    Ok(_) => {
-                        self.status_text = format!("Deleted {:?}", selected_entry.file_name());
-                    }
-                    Err(e) => {
-                        self.status_text = format!("Error {e:?}");
-                    }
-                };
-                self.refresh_dirlist();
-            }
-            None => self.status_text = "No file/directory selected!".to_string(),
+        if let Some(idx) = self.dir_items.state.selected() {
+            let selected_entry = &self.dir_items.items[idx];
+            entry::trash_entry(selected_entry);
+            self.refresh_dirlist();
         }
     }
 
