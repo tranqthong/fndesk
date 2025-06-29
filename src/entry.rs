@@ -176,9 +176,11 @@ mod tests {
 
         let expected_file_contents = fs::read_to_string(&license_filepath).unwrap();
 
+        // make the initial copy
         let dest_dirpath = append_duplicates(license_filepath.as_path(), dest_dir.path());
         copy_file(license_filepath.as_path(), &dest_dirpath, false);
 
+        // copy the same file again to test if duplicated files are handled correctly
         let dest_dirpath = append_duplicates(license_filepath.as_path(), dest_dir.path());
         copy_file(license_filepath.as_path(), &dest_dirpath, false);
 
