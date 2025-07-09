@@ -62,7 +62,7 @@ impl App {
         match key.code {
             KeyCode::Char('q') => self.quit_app(),
             KeyCode::Char('h') => self.toggle_hidden(),
-            KeyCode::Char('c') => self.add_selected_to_clipboard(),
+            KeyCode::Char('c') | KeyCode::Char('y') => self.add_selected_to_clipboard(),
             KeyCode::Char('p') => self.copy_from_clipboard(),
             KeyCode::Char('x') => self.move_from_clipboard(),
             KeyCode::Delete => self.trash_selected(),
@@ -209,7 +209,7 @@ impl App {
             // TODO need to handle opening files on Windows/Mac in the future
             match Command::new("xdg-open").arg(selected_entry_path).output() {
                 Ok(_) => (),
-                Err(e) => debug!("{:?}", e),
+                Err(e) => debug!("{e:?}"),
             }
         }
     }

@@ -30,7 +30,7 @@ pub fn status_string<T: AsRef<Path>>(current_entry: T) -> String {
             status_string
         }
         Err(_) => {
-            debug!("Unable to retreive file metadata.");
+            debug!("No File or unable to retreive file metadata.");
             "".to_string()
         }
     }

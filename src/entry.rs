@@ -60,7 +60,7 @@ pub fn copy_file<T: AsRef<Path>>(src_filepath: T, dest_filepath: T, move_content
             }
         }
         Err(e) => {
-            error!("Unable to copy file, Error: {:?}", e)
+            error!("Unable to copy file, Error: {e:?}")
         }
     }
 }
