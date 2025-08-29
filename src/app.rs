@@ -126,8 +126,8 @@ impl App {
     fn add_selected_to_clipboard(&mut self) {
         match self.dir_items.state.selected() {
             Some(idx) => {
-                // we replace whatever is currently in the clipboard
-                // considering maybe making it a stack/list in the future
+                // replace what is currently in the clipboard
+                // considering possibly making it a stack/list in the future
                 self.clipboard = Some(self.dir_items.items[idx].path());
                 debug!("Added {:?} to clipboard", &self.dir_items.items[idx])
             }
@@ -353,7 +353,7 @@ mod tests {
 
         test_app.app.handle_keypress(KeyCode::Left.into());
 
-        // tempdir are hidden so to find our dest dir, we need to turn on hidden dir/files
+        // turning on hidden directories, in order to find the temp directory as its hidden by default
         test_app.app.handle_keypress(KeyCode::Char('h').into());
         loop {
             let selected_idx = test_app.app.dir_items.state.selected().unwrap();

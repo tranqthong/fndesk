@@ -16,9 +16,9 @@ pub fn parse_args(args: Vec<String>) -> PathBuf {
 
             if !init_dir.exists() {
                 println!("Directory does not exist or non sufficient permission to open. Starting with current directory");
-                // if for some reason we can't open the user specified dir
-                // then we default to either the home_dir based on the user's env
-                // otherwise we just start with the current directory
+                // attempt to open the directory passed in as an argument
+                // failing that, open the home directory based on the user env
+                // if all fails, just start in the current directory
                 init_dir = match std::env::home_dir() {
                     Some(x) => x,
                     None => path::get_current_dirpath(),
