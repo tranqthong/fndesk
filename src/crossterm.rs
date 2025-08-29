@@ -24,7 +24,7 @@ pub fn run<T: AsRef<Path>>(init_dir: T) -> Result<(), Box<dyn Error>> {
 }
 
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
-    // need to find a better way to detect file system changes
+    // TODO find a better way to detect file system changes if possible
     app.refresh_dirlist();
     while app.app_state != AppState::Exit {
         terminal.draw(|f| {

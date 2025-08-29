@@ -12,7 +12,7 @@ use crate::{
 };
 
 pub fn draw(frame: &mut Frame, app: &mut App) {
-    // This is a potential UI usage when I decide to add two column panes
+    // This is a potential UI usage for two column panes, to be implemented in the future, maybe
     // let vertical_block = Layout::vertical([
     //     Constraint::Length(1),
     //     Constraint::Min(0),

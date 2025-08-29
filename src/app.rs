@@ -137,14 +137,15 @@ impl App {
 
     fn move_from_clipboard(&mut self) {
         if self.clipboard.is_some() {
+            //should not panic since clipboard is checked to ensure it contains some value
             let src_path = self.clipboard.as_ref().unwrap();
             if src_path.is_file() {
                 let dest_path = entry::append_duplicates(src_path, &self.current_dir);
 
                 entry::copy_file(src_path, &dest_path, true);
             } else if src_path.is_dir() {
-                // for directories we will attempt to merge
-                // later we can give the user the option on whether or not to merge
+                // for directories, a merge will be attempted
+                // in the future, maybe give the user the option on whether or not to merge
                 match entry::copy_dir(src_path, &self.current_dir, true) {
                     Ok(_) => (),
                     Err(e) => error!("{e:}"),
@@ -156,14 +157,15 @@ impl App {
 
     fn copy_from_clipboard(&mut self) {
         if self.clipboard.is_some() {
+            //should not panic since clipboard is checked to ensure it contains some value
             let src_path = self.clipboard.as_ref().unwrap();
             if src_path.is_file() {
                 let dest_path = entry::append_duplicates(src_path, &self.current_dir);
 
                 entry::copy_file(src_path, &dest_path, false);
             } else if src_path.is_dir() {
-                // for directories we will attempt to merge
-                // later we can give the user the option on whether or not to merge
+                // for directories, a merge will be attempted
+                // in the future, maybe give the user the option on whether or not to merge
                 match entry::copy_dir(src_path, &self.current_dir, false) {
                     Ok(_) => (),
                     Err(e) => error!("{e:}"),
@@ -185,7 +187,7 @@ impl App {
         let new_current_dirpath = self.parent_dir.clone();
         let new_parent_dirpath = path::get_parent_dir(&new_current_dirpath);
 
-        // we only want to be able to navigate up to a parent if we're not already in the root directory
+        // only navigate up if the current directory is not the root directory
         if new_parent_dirpath != self.current_dir {
             self.parent_dir = new_parent_dirpath;
             self.current_dir = new_current_dirpath;
@@ -195,7 +197,7 @@ impl App {
     }
 
     fn open_selected(&mut self) {
-        let selected_idx = self.dir_items.state.selected().unwrap_or(0);
+        let selected_idx = self.dir_items.state.selected().unwrap_or_else(|| 0);
         let selected_entry = &self.dir_items.items[selected_idx];
 
         if selected_entry.metadata().unwrap().is_dir() {
@@ -206,7 +208,7 @@ impl App {
         } else {
             let selected_entry_path = selected_entry.path().to_str().unwrap().to_owned();
 
-            // TODO need to handle opening files on Windows/Mac in the future
+            // TODO handle opening files on Windows/Mac
             match Command::new("xdg-open").arg(selected_entry_path).output() {
                 Ok(_) => (),
                 Err(e) => debug!("{e:?}"),
